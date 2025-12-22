@@ -25,10 +25,12 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
-import { Clock, MapPin, Wifi, Plus, Search, Filter } from "lucide-react";
+import { Clock, MapPin, Wifi, Plus, Search, Filter, User } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 
-type Service = Database["public"]["Tables"]["services"]["Row"];
+type Service = Database["public"]["Tables"]["services"]["Row"] & {
+  profiles?: { full_name: string | null } | null;
+};
 type ServiceType = Database["public"]["Enums"]["service_type"];
 
 const CATEGORIES = [
@@ -86,16 +88,32 @@ const Marketplace = () => {
   }, []);
 
   const fetchServices = async () => {
-    const { data, error } = await supabase
+    const { data: servicesData, error } = await supabase
       .from("services")
       .select("*")
       .order("created_at", { ascending: false });
 
     if (error) {
       console.error("Error fetching services:", error);
-    } else {
-      setServices(data || []);
+      setLoading(false);
+      return;
     }
+
+    // Fetch profiles for all unique user_ids
+    const userIds = [...new Set(servicesData?.map(s => s.user_id) || [])];
+    const { data: profilesData } = await supabase
+      .from("profiles")
+      .select("user_id, full_name")
+      .in("user_id", userIds);
+
+    const profilesMap = new Map(profilesData?.map(p => [p.user_id, p]) || []);
+    
+    const servicesWithProfiles = servicesData?.map(service => ({
+      ...service,
+      profiles: profilesMap.get(service.user_id) || null
+    })) || [];
+
+    setServices(servicesWithProfiles);
     setLoading(false);
   };
 
@@ -363,6 +381,13 @@ const ServiceCard = ({ service }: { service: Service }) => {
       </h3>
 
       <p className="text-sm text-muted-foreground mb-4 line-clamp-3">{service.description}</p>
+
+      {service.profiles?.full_name && (
+        <div className="flex items-center gap-2 mb-4 text-sm text-muted-foreground">
+          <User className="w-4 h-4" />
+          <span>Posted by {service.profiles.full_name}</span>
+        </div>
+      )}
 
       <div className="flex items-center justify-between pt-4 border-t border-border">
         <div className="flex items-center gap-1 text-gold font-semibold">
