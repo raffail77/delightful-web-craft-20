@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -49,6 +50,7 @@ const CATEGORIES = [
 const Marketplace = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -163,7 +165,14 @@ const Marketplace = () => {
               <p className="text-muted-foreground mt-1">Find skills to learn or share your expertise</p>
             </div>
 
-            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <Dialog open={dialogOpen} onOpenChange={(open) => {
+              if (open && !user) {
+                toast({ title: "Sign in required", description: "Please sign in to post a service" });
+                navigate("/auth");
+                return;
+              }
+              setDialogOpen(open);
+            }}>
               <DialogTrigger asChild>
                 <Button variant="gold" className="gap-2">
                   <Plus className="w-5 h-5" />
