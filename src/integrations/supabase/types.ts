@@ -53,6 +53,51 @@ export type Database = {
         }
         Relationships: []
       }
+      services: {
+        Row: {
+          category: string
+          created_at: string
+          description: string
+          hourly_credits: number
+          id: string
+          is_active: boolean
+          is_remote: boolean
+          location: string | null
+          service_type: Database["public"]["Enums"]["service_type"]
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          description: string
+          hourly_credits?: number
+          id?: string
+          is_active?: boolean
+          is_remote?: boolean
+          location?: string | null
+          service_type: Database["public"]["Enums"]["service_type"]
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string
+          hourly_credits?: number
+          id?: string
+          is_active?: boolean
+          is_remote?: boolean
+          location?: string | null
+          service_type?: Database["public"]["Enums"]["service_type"]
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -61,7 +106,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      service_type: "offer" | "request"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -188,6 +233,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      service_type: ["offer", "request"],
+    },
   },
 } as const

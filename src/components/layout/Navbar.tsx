@@ -26,10 +26,10 @@ const Navbar = () => {
   }, []);
 
   const navLinks = [
-    { name: "How It Works", href: "#how-it-works" },
-    { name: "Features", href: "#features" },
-    { name: "Services", href: "#services" },
-    { name: "Testimonials", href: "#testimonials" },
+    { name: "Marketplace", href: "/marketplace", isRoute: true },
+    { name: "How It Works", href: "#how-it-works", isRoute: false },
+    { name: "Features", href: "#features", isRoute: false },
+    { name: "Testimonials", href: "#testimonials", isRoute: false },
   ];
 
   const handleSignOut = async () => {
@@ -59,15 +59,25 @@ const Navbar = () => {
 
           {/* Desktop Navigation */}
           <div className="hidden lg:flex items-center gap-8">
-            {navLinks.map((link) => (
-              <a
-                key={link.name}
-                href={link.href}
-                className="text-muted-foreground hover:text-foreground transition-colors font-medium"
-              >
-                {link.name}
-              </a>
-            ))}
+            {navLinks.map((link) =>
+              link.isRoute ? (
+                <Link
+                  key={link.name}
+                  to={link.href}
+                  className="text-muted-foreground hover:text-foreground transition-colors font-medium"
+                >
+                  {link.name}
+                </Link>
+              ) : (
+                <a
+                  key={link.name}
+                  href={link.href}
+                  className="text-muted-foreground hover:text-foreground transition-colors font-medium"
+                >
+                  {link.name}
+                </a>
+              )
+            )}
           </div>
 
           {/* Desktop CTA */}
@@ -121,16 +131,27 @@ const Navbar = () => {
         {isMobileMenuOpen && (
           <div className="lg:hidden pb-6 animate-fade-up">
             <div className="flex flex-col gap-4">
-              {navLinks.map((link) => (
-                <a
-                  key={link.name}
-                  href={link.href}
-                  className="text-muted-foreground hover:text-foreground transition-colors font-medium py-2"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  {link.name}
-                </a>
-              ))}
+              {navLinks.map((link) =>
+                link.isRoute ? (
+                  <Link
+                    key={link.name}
+                    to={link.href}
+                    className="text-muted-foreground hover:text-foreground transition-colors font-medium py-2"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    {link.name}
+                  </Link>
+                ) : (
+                  <a
+                    key={link.name}
+                    href={link.href}
+                    className="text-muted-foreground hover:text-foreground transition-colors font-medium py-2"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    {link.name}
+                  </a>
+                )
+              )}
               <div className="flex flex-col gap-3 pt-4 border-t border-border">
                 {user ? (
                   <>
