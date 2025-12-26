@@ -2,27 +2,27 @@ import { Clock, Mail, MapPin, Phone } from "lucide-react";
 
 const footerLinks = {
   platform: [
-    { name: "How It Works", href: "#how-it-works" },
-    { name: "Features", href: "#features" },
-    { name: "Services", href: "#services" },
-    { name: "Pricing", href: "#" },
+    { name: "How It Works", href: "/#how-it-works" },
+    { name: "Features", href: "/#features" },
+    { name: "Services", href: "/#services" },
+    { name: "Pricing", href: "/pricing" },
   ],
   company: [
-    { name: "About Us", href: "#" },
-    { name: "Careers", href: "#" },
-    { name: "Press", href: "#" },
-    { name: "Blog", href: "#" },
+    { name: "About Us", href: "/about" },
+    { name: "Careers", href: "/careers" },
+    { name: "Press", href: "/press" },
+    { name: "Blog", href: "/blog" },
   ],
   support: [
-    { name: "Help Center", href: "#" },
-    { name: "Contact Us", href: "#" },
-    { name: "Community", href: "#" },
-    { name: "Status", href: "#" },
+    { name: "Help Center", href: "/help" },
+    { name: "Contact Us", href: "/contact" },
+    { name: "Community", href: "/community" },
+    { name: "Status", href: "/status" },
   ],
   legal: [
-    { name: "Privacy Policy", href: "#" },
-    { name: "Terms of Service", href: "#" },
-    { name: "Cookie Policy", href: "#" },
+    { name: "Privacy Policy", href: "/privacy" },
+    { name: "Terms of Service", href: "/terms" },
+    { name: "Cookie Policy", href: "/cookies" },
   ],
 };
 
