@@ -25,8 +25,9 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
-import { Clock, MapPin, Wifi, Plus, Search, Filter, User } from "lucide-react";
+import { Clock, MapPin, Wifi, Plus, Search, Filter, User, MessageCircle } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
+import MessagingDialog from "@/components/MessagingDialog";
 
 type Service = Database["public"]["Tables"]["services"]["Row"] & {
   profiles?: { full_name: string | null } | null;
@@ -60,6 +61,11 @@ const Marketplace = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [activeTab, setActiveTab] = useState<"all" | "offers" | "requests">("all");
 
+  // Messaging state
+  const [messagingOpen, setMessagingOpen] = useState(false);
+  const [messagingReceiver, setMessagingReceiver] = useState({ id: "", name: "" });
+  const [messagingService, setMessagingService] = useState({ id: "", title: "" });
+
   // Form state
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -69,6 +75,17 @@ const Marketplace = () => {
   const [location, setLocation] = useState("");
   const [isRemote, setIsRemote] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleContactProvider = (receiverId: string, receiverName: string, serviceId: string, serviceTitle: string) => {
+    if (!user) {
+      toast({ title: "Sign in required", description: "Please sign in to contact providers" });
+      navigate("/auth");
+      return;
+    }
+    setMessagingReceiver({ id: receiverId, name: receiverName });
+    setMessagingService({ id: serviceId, title: serviceTitle });
+    setMessagingOpen(true);
+  };
 
   useEffect(() => {
     fetchServices();
@@ -348,19 +365,39 @@ const Marketplace = () => {
           ) : (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredServices.map((service) => (
-                <ServiceCard key={service.id} service={service} />
+                <ServiceCard 
+                  key={service.id} 
+                  service={service} 
+                  currentUserId={user?.id}
+                  onContact={handleContactProvider}
+                />
               ))}
             </div>
           )}
         </div>
       </main>
 
+      <MessagingDialog
+        open={messagingOpen}
+        onOpenChange={setMessagingOpen}
+        receiverId={messagingReceiver.id}
+        receiverName={messagingReceiver.name}
+        serviceId={messagingService.id}
+        serviceTitle={messagingService.title}
+      />
+
       <Footer />
     </div>
   );
 };
 
-const ServiceCard = ({ service }: { service: Service }) => {
+const ServiceCard = ({ service, currentUserId, onContact }: { 
+  service: Service; 
+  currentUserId?: string;
+  onContact: (receiverId: string, receiverName: string, serviceId: string, serviceTitle: string) => void;
+}) => {
+  const showContactButton = currentUserId && service.user_id !== currentUserId;
+  
   return (
     <div className="glass-card p-6 rounded-xl hover:shadow-lg transition-all group">
       <div className="flex items-center justify-between mb-3">
@@ -409,6 +446,23 @@ const ServiceCard = ({ service }: { service: Service }) => {
           )}
         </div>
       </div>
+
+      {showContactButton && (
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full mt-4 gap-2"
+          onClick={() => onContact(
+            service.user_id,
+            service.profiles?.full_name || "User",
+            service.id,
+            service.title
+          )}
+        >
+          <MessageCircle className="w-4 h-4" />
+          Contact Provider
+        </Button>
+      )}
     </div>
   );
 };
