@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
-import { Clock, Menu, X, User, LogOut } from "lucide-react";
+import { Clock, Menu, X, User, LogOut, MessageCircle } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -99,6 +99,10 @@ const Navbar = () => {
                     <User className="w-4 h-4 mr-2" />
                     Profile
                   </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate("/messages")}>
+                    <MessageCircle className="w-4 h-4 mr-2" />
+                    Messages
+                  </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleSignOut}>
                     <LogOut className="w-4 h-4 mr-2" />
@@ -165,6 +169,17 @@ const Navbar = () => {
                     >
                       <User className="w-4 h-4 mr-2" />
                       Profile
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      className="w-full justify-start"
+                      onClick={() => {
+                        navigate("/messages");
+                        setIsMobileMenuOpen(false);
+                      }}
+                    >
+                      <MessageCircle className="w-4 h-4 mr-2" />
+                      Messages
                     </Button>
                     <Button
                       variant="outline"
