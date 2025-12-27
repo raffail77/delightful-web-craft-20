@@ -25,10 +25,14 @@ const Navbar = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // Debug auth state
+  console.log("Navbar auth state:", { user: user?.email, loading });
+
   const navLinks = [
     { name: "Marketplace", href: "/marketplace", isRoute: true },
     { name: "How It Works", href: "#how-it-works", isRoute: false },
     { name: "Features", href: "#features", isRoute: false },
+    { name: "Services", href: "#services", isRoute: false },
     { name: "Testimonials", href: "#testimonials", isRoute: false },
   ];
 
