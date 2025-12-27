@@ -28,39 +28,40 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {
-    // Get session first before setting up listener
-    const initializeAuth = async () => {
-      try {
-        const { data: { session: initialSession } } = await supabase.auth.getSession();
-        setSession(initialSession);
-        setUser(initialSession?.user ?? null);
-      } catch (error) {
-        console.error("Error getting session:", error);
-      } finally {
-        setLoading(false);
-        setInitialized(true);
+    // Set up auth state listener FIRST (important for OAuth redirects)
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, currentSession) => {
+      // Only synchronous state updates here
+      setSession(currentSession);
+      setUser(currentSession?.user ?? null);
+      setLoading(false);
+
+      // Avoid logging sensitive auth details in production
+      if (import.meta.env.DEV) {
+        console.log("Auth state changed:", event);
       }
-    };
+    });
 
-    initializeAuth();
-
-    // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, currentSession) => {
-        console.log("Auth state changed:", event, currentSession?.user?.email);
+    // THEN check for existing session
+    supabase.auth
+      .getSession()
+      .then(({ data: { session: currentSession } }) => {
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
-        if (initialized) {
-          setLoading(false);
+        setLoading(false);
+      })
+      .catch((error) => {
+        if (import.meta.env.DEV) {
+          console.error("Error getting session:", error);
         }
-      }
-    );
+        setLoading(false);
+      });
 
     return () => subscription.unsubscribe();
-  }, [initialized]);
+  }, []);
 
   const signUp = async (email: string, password: string, fullName: string) => {
     const redirectUrl = `${window.location.origin}/`;
