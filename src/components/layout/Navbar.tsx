@@ -14,7 +14,7 @@ import {
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const { user, signOut } = useAuth();
+  const { user, loading, signOut } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -82,7 +82,9 @@ const Navbar = () => {
 
           {/* Desktop CTA */}
           <div className="hidden lg:flex items-center gap-4">
-            {user ? (
+            {loading ? (
+              <div className="w-8 h-8 rounded-full bg-muted animate-pulse" />
+            ) : user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="flex items-center gap-2">
@@ -157,7 +159,9 @@ const Navbar = () => {
                 )
               )}
               <div className="flex flex-col gap-3 pt-4 border-t border-border">
-                {user ? (
+                {loading ? (
+                  <div className="w-full h-10 bg-muted animate-pulse rounded-md" />
+                ) : user ? (
                   <>
                     <Button
                       variant="ghost"
