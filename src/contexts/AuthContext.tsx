@@ -95,9 +95,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}/`,
+        // Use a dedicated callback route so local/dev + prod redirects can reliably
+        // exchange the OAuth code for a session before rendering the app.
+        redirectTo: `${window.location.origin}/auth/callback`,
         queryParams: {
-          prompt: 'select_account',
+          prompt: "select_account",
         },
       },
     });
