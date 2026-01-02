@@ -11,18 +11,48 @@ const AuthCallback = () => {
   useEffect(() => {
     let cancelled = false;
 
+    const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+    const waitForSession = async () => {
+      // The auth client may need a moment to persist the session after redirect.
+      for (let i = 0; i < 20; i++) {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        if (session) return session;
+        await sleep(150);
+      }
+      return null;
+    };
+
     (async () => {
       try {
-        const params = new URLSearchParams(window.location.search);
-        const code = params.get("code");
+        const url = new URL(window.location.href);
+        const code = url.searchParams.get("code");
+        const oauthError =
+          url.searchParams.get("error_description") || url.searchParams.get("error");
 
-        // For OAuth PKCE flow: exchange the code for a session.
+        // If the provider redirected back with an error, surface it.
+        if (oauthError) {
+          throw new Error(decodeURIComponent(oauthError));
+        }
+
+        // PKCE flow: exchange the code for a session.
         if (code) {
           const { error } = await supabase.auth.exchangeCodeForSession(code);
           if (error) throw error;
         }
 
-        // At this point, AuthProvider's onAuthStateChange/getSession will pick up the session.
+        // Whether PKCE (code) or implicit (hash), wait until the session is actually available.
+        const session = await waitForSession();
+        if (!session) {
+          throw new Error(
+            "Google sign-in returned to the app, but no login session was created. This is almost always caused by a redirect URL mismatch (common in local development). Make sure your backend auth redirect URLs include this exact URL: " +
+              window.location.origin +
+              "/auth/callback"
+          );
+        }
+
         if (!cancelled) navigate("/", { replace: true });
       } catch (err: any) {
         if (!cancelled) {
