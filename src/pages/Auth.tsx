@@ -91,8 +91,7 @@ const Auth = () => {
       toast({ title: "Error", description: message, variant: "destructive" });
     } else {
       toast({ title: "Success!", description: "Account created successfully. Welcome to TimeBank!" });
-      // Don't navigate immediately - let the useEffect handle it when user state updates
-      // This gives time for onAuthStateChange to fire and set the user
+      navigate("/");
     }
   };
 
