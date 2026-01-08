@@ -27,10 +27,9 @@ const Navbar = () => {
 
   const navLinks = [
     { name: "Marketplace", href: "/marketplace", isRoute: true },
-    { name: "How It Works", href: "#how-it-works", isRoute: false },
+    { name: "About Us", href: "/about", isRoute: true },
     { name: "Features", href: "#features", isRoute: false },
     { name: "Services", href: "#services", isRoute: false },
-    { name: "Testimonials", href: "#testimonials", isRoute: false },
   ];
 
   const handleSignOut = async () => {
