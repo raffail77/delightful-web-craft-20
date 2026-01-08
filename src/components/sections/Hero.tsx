@@ -70,12 +70,16 @@ const Hero = () => {
 
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16 animate-fade-up animation-delay-300">
-            <Button variant="gold" size="xl" className="w-full sm:w-auto group">
-              Start Trading Time
-              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+            <Button variant="gold" size="xl" className="w-full sm:w-auto group" asChild>
+              <a href="/marketplace">
+                Start Trading Time
+                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              </a>
             </Button>
-            <Button variant="hero" size="xl" className="w-full sm:w-auto">
-              See How It Works
+            <Button variant="hero" size="xl" className="w-full sm:w-auto" asChild>
+              <a href="#how-it-works">
+                See How It Works
+              </a>
             </Button>
           </div>
 
