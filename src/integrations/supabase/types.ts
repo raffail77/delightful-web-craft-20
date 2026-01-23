@@ -136,15 +136,73 @@ export type Database = {
         }
         Relationships: []
       }
+      transactions: {
+        Row: {
+          amount: number
+          completed_at: string | null
+          created_at: string
+          description: string | null
+          id: string
+          receiver_id: string
+          sender_id: string
+          service_id: string | null
+          status: Database["public"]["Enums"]["transaction_status"]
+          transaction_type: Database["public"]["Enums"]["transaction_type"]
+        }
+        Insert: {
+          amount: number
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          receiver_id: string
+          sender_id: string
+          service_id?: string | null
+          status?: Database["public"]["Enums"]["transaction_status"]
+          transaction_type?: Database["public"]["Enums"]["transaction_type"]
+        }
+        Update: {
+          amount?: number
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          receiver_id?: string
+          sender_id?: string
+          service_id?: string | null
+          status?: Database["public"]["Enums"]["transaction_status"]
+          transaction_type?: Database["public"]["Enums"]["transaction_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transactions_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      transfer_credits: {
+        Args: {
+          p_amount: number
+          p_description?: string
+          p_receiver_id: string
+          p_sender_id: string
+          p_service_id?: string
+        }
+        Returns: string
+      }
     }
     Enums: {
       service_type: "offer" | "request"
+      transaction_status: "pending" | "completed" | "cancelled" | "disputed"
+      transaction_type: "service_payment" | "refund" | "bonus" | "adjustment"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -273,6 +331,8 @@ export const Constants = {
   public: {
     Enums: {
       service_type: ["offer", "request"],
+      transaction_status: ["pending", "completed", "cancelled", "disputed"],
+      transaction_type: ["service_payment", "refund", "bonus", "adjustment"],
     },
   },
 } as const

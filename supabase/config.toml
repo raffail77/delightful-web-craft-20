@@ -1,1 +1,7 @@
 project_id = "gqibxsjcspmzjhrtnqnf"
+
+[functions.chat]
+verify_jwt = false
+
+[functions.transfer-credits]
+verify_jwt = false

@@ -11,6 +11,7 @@ import AuthCallback from "./pages/AuthCallback";
 import Profile from "./pages/Profile";
 import Marketplace from "./pages/Marketplace";
 import Messages from "./pages/Messages";
+import Transactions from "./pages/Transactions";
 import NotFound from "./pages/NotFound";
 import Pricing from "./pages/Pricing";
 import About from "./pages/About";
@@ -41,6 +42,7 @@ const App = () => (
             <Route path="/profile" element={<Profile />} />
             <Route path="/marketplace" element={<Marketplace />} />
             <Route path="/messages" element={<Messages />} />
+            <Route path="/transactions" element={<Transactions />} />
             <Route path="/pricing" element={<Pricing />} />
             <Route path="/about" element={<About />} />
             <Route path="/careers" element={<Careers />} />
