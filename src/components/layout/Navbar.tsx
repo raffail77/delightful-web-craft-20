@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
-import { Clock, Menu, X, User, LogOut, MessageCircle } from "lucide-react";
+import { useCredits } from "@/hooks/useCredits";
+import { Clock, Menu, X, User, LogOut, MessageCircle, Coins, History } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,6 +16,7 @@ const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { user, loading, signOut } = useAuth();
+  const { credits, isLoading: creditsLoading } = useCredits();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -85,33 +87,47 @@ const Navbar = () => {
             {loading ? (
               <div className="w-8 h-8 rounded-full bg-muted animate-pulse" />
             ) : user ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-full bg-gradient-gold flex items-center justify-center">
-                      <User className="w-4 h-4 text-navy" />
-                    </div>
-                    <span className="max-w-[100px] truncate">
-                      {user.email?.split("@")[0]}
-                    </span>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48">
-                  <DropdownMenuItem onClick={() => navigate("/profile")}>
-                    <User className="w-4 h-4 mr-2" />
-                    Profile
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate("/messages")}>
-                    <MessageCircle className="w-4 h-4 mr-2" />
-                    Messages
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleSignOut}>
-                    <LogOut className="w-4 h-4 mr-2" />
-                    Sign Out
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <>
+                {/* Credits Display */}
+                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-gold/10 border border-gold/20 rounded-full">
+                  <Coins className="w-4 h-4 text-gold" />
+                  <span className="font-semibold text-gold">
+                    {creditsLoading ? "..." : credits}
+                  </span>
+                </div>
+                
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-full bg-gradient-gold flex items-center justify-center">
+                        <User className="w-4 h-4 text-navy" />
+                      </div>
+                      <span className="max-w-[100px] truncate">
+                        {user.email?.split("@")[0]}
+                      </span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48">
+                    <DropdownMenuItem onClick={() => navigate("/profile")}>
+                      <User className="w-4 h-4 mr-2" />
+                      Profile
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate("/messages")}>
+                      <MessageCircle className="w-4 h-4 mr-2" />
+                      Messages
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate("/transactions")}>
+                      <History className="w-4 h-4 mr-2" />
+                      Transactions
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleSignOut}>
+                      <LogOut className="w-4 h-4 mr-2" />
+                      Sign Out
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </>
             ) : (
               <>
                 <Button variant="ghost" onClick={() => navigate("/auth")}>
@@ -163,6 +179,13 @@ const Navbar = () => {
                   <div className="w-full h-10 bg-muted animate-pulse rounded-md" />
                 ) : user ? (
                   <>
+                    {/* Mobile Credits Display */}
+                    <div className="flex items-center justify-center gap-2 py-2 bg-gold/10 border border-gold/20 rounded-lg mb-2">
+                      <Coins className="w-4 h-4 text-gold" />
+                      <span className="font-semibold text-gold">
+                        {creditsLoading ? "..." : credits} Credits
+                      </span>
+                    </div>
                     <Button
                       variant="ghost"
                       className="w-full justify-start"
@@ -184,6 +207,17 @@ const Navbar = () => {
                     >
                       <MessageCircle className="w-4 h-4 mr-2" />
                       Messages
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      className="w-full justify-start"
+                      onClick={() => {
+                        navigate("/transactions");
+                        setIsMobileMenuOpen(false);
+                      }}
+                    >
+                      <History className="w-4 h-4 mr-2" />
+                      Transactions
                     </Button>
                     <Button
                       variant="outline"
