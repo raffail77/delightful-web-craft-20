@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCredits } from "@/hooks/useCredits";
-import { Clock, Menu, X, User, LogOut, MessageCircle, Coins, History } from "lucide-react";
+import { Clock, Menu, X, User, LogOut, MessageCircle, Coins, History, FileText } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -120,6 +120,10 @@ const Navbar = () => {
                       <History className="w-4 h-4 mr-2" />
                       Transactions
                     </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate("/contracts")}>
+                      <FileText className="w-4 h-4 mr-2" />
+                      Contracts
+                    </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={handleSignOut}>
                       <LogOut className="w-4 h-4 mr-2" />
@@ -218,6 +222,17 @@ const Navbar = () => {
                     >
                       <History className="w-4 h-4 mr-2" />
                       Transactions
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      className="w-full justify-start"
+                      onClick={() => {
+                        navigate("/contracts");
+                        setIsMobileMenuOpen(false);
+                      }}
+                    >
+                      <FileText className="w-4 h-4 mr-2" />
+                      Contracts
                     </Button>
                     <Button
                       variant="outline"
