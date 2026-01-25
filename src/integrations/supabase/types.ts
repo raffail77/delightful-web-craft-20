@@ -14,6 +14,75 @@ export type Database = {
   }
   public: {
     Tables: {
+      contracts: {
+        Row: {
+          agreed_credits: number
+          client_confirmed: boolean
+          client_id: string
+          completed_at: string | null
+          created_at: string
+          description: string
+          id: string
+          proposed_by: string
+          provider_confirmed: boolean
+          provider_id: string
+          service_id: string | null
+          status: Database["public"]["Enums"]["contract_status"]
+          title: string
+          transaction_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          agreed_credits: number
+          client_confirmed?: boolean
+          client_id: string
+          completed_at?: string | null
+          created_at?: string
+          description: string
+          id?: string
+          proposed_by: string
+          provider_confirmed?: boolean
+          provider_id: string
+          service_id?: string | null
+          status?: Database["public"]["Enums"]["contract_status"]
+          title: string
+          transaction_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          agreed_credits?: number
+          client_confirmed?: boolean
+          client_id?: string
+          completed_at?: string | null
+          created_at?: string
+          description?: string
+          id?: string
+          proposed_by?: string
+          provider_confirmed?: boolean
+          provider_id?: string
+          service_id?: string | null
+          status?: Database["public"]["Enums"]["contract_status"]
+          title?: string
+          transaction_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contracts_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contracts_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       messages: {
         Row: {
           content: string
@@ -200,6 +269,13 @@ export type Database = {
       }
     }
     Enums: {
+      contract_status:
+        | "proposed"
+        | "accepted"
+        | "in_progress"
+        | "completed"
+        | "disputed"
+        | "cancelled"
       service_type: "offer" | "request"
       transaction_status: "pending" | "completed" | "cancelled" | "disputed"
       transaction_type: "service_payment" | "refund" | "bonus" | "adjustment"
@@ -330,6 +406,14 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      contract_status: [
+        "proposed",
+        "accepted",
+        "in_progress",
+        "completed",
+        "disputed",
+        "cancelled",
+      ],
       service_type: ["offer", "request"],
       transaction_status: ["pending", "completed", "cancelled", "disputed"],
       transaction_type: ["service_payment", "refund", "bonus", "adjustment"],
