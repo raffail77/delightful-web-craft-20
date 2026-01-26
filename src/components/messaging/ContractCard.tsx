@@ -11,7 +11,8 @@ import {
   Play, 
   CheckCircle2,
   Clock,
-  AlertTriangle
+  AlertTriangle,
+  CreditCard
 } from "lucide-react";
 
 interface ContractCardProps {
@@ -89,24 +90,27 @@ const ContractCard = ({ contract, onAction }: ContractCardProps) => {
           Created {format(new Date(contract.created_at), "MMM d, yyyy")}
         </div>
 
-        {/* Confirmation status for in_progress contracts */}
+        {/* Status indicator for in_progress contracts */}
         {contract.status === "in_progress" && (
           <div className="flex items-center gap-2 text-xs">
             <Clock className="w-3 h-3" />
             <span>
               {myConfirmed && otherConfirmed
-                ? "Both confirmed - processing payment..."
-                : myConfirmed
-                ? "You confirmed - waiting for other party"
+                ? "Processing payment..."
+                : isProposer
+                ? otherConfirmed
+                  ? "Work completed - ready for payment"
+                  : "Service in progress"
                 : otherConfirmed
-                ? "Other party confirmed - please confirm"
-                : "Waiting for completion confirmations"}
+                ? "Waiting for payment"
+                : "Service in progress"}
             </span>
           </div>
         )}
 
-        {/* Action buttons based on status */}
+        {/* Action buttons based on status and role */}
         <div className="flex gap-2 pt-2">
+          {/* Proposed status - acceptor can accept, proposer can withdraw */}
           {contract.status === "proposed" && !isProposer && (
             <>
               <Button size="sm" variant="gold" onClick={handleAccept} className="flex-1">
@@ -126,24 +130,54 @@ const ContractCard = ({ contract, onAction }: ContractCardProps) => {
             </Button>
           )}
 
-          {contract.status === "accepted" && (
+          {/* Accepted status - only the acceptor (non-proposer) can start service */}
+          {contract.status === "accepted" && !isProposer && (
             <Button size="sm" variant="gold" onClick={handleStart} className="flex-1">
               <Play className="w-3 h-3 mr-1" />
               Start Service
             </Button>
           )}
 
-          {contract.status === "in_progress" && !myConfirmed && (
-            <Button size="sm" variant="gold" onClick={handleConfirm} className="flex-1">
-              <CheckCircle2 className="w-3 h-3 mr-1" />
-              Confirm Completed
+          {contract.status === "accepted" && isProposer && (
+            <Button size="sm" variant="outline" disabled className="flex-1">
+              <Clock className="w-3 h-3 mr-1" />
+              Waiting to Start
             </Button>
           )}
 
-          {contract.status === "in_progress" && myConfirmed && !otherConfirmed && (
+          {/* In Progress - acceptor marks complete, proposer pays after completion */}
+          {contract.status === "in_progress" && !isProposer && !otherConfirmed && (
+            <Button size="sm" variant="gold" onClick={handleConfirm} className="flex-1">
+              <CheckCircle2 className="w-3 h-3 mr-1" />
+              Mark Complete
+            </Button>
+          )}
+
+          {contract.status === "in_progress" && !isProposer && otherConfirmed && (
             <Button size="sm" variant="outline" disabled className="flex-1">
               <Clock className="w-3 h-3 mr-1" />
-              Waiting...
+              Awaiting Payment
+            </Button>
+          )}
+
+          {contract.status === "in_progress" && isProposer && !otherConfirmed && (
+            <Button size="sm" variant="outline" disabled className="flex-1">
+              <Play className="w-3 h-3 mr-1" />
+              In Progress
+            </Button>
+          )}
+
+          {contract.status === "in_progress" && isProposer && otherConfirmed && !myConfirmed && (
+            <Button size="sm" variant="gold" onClick={handleConfirm} className="flex-1">
+              <CreditCard className="w-3 h-3 mr-1" />
+              Pay Credits
+            </Button>
+          )}
+
+          {contract.status === "in_progress" && myConfirmed && otherConfirmed && (
+            <Button size="sm" variant="outline" disabled className="flex-1">
+              <Clock className="w-3 h-3 mr-1" />
+              Processing...
             </Button>
           )}
         </div>
