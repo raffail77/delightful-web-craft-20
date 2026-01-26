@@ -7,8 +7,25 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/sections/Footer";
-import { MessageCircle, Send, ArrowLeft, User } from "lucide-react";
+import { MessageCircle, Send, ArrowLeft, User, Trash2, MoreVertical } from "lucide-react";
 import { format } from "date-fns";
+import { useToast } from "@/hooks/use-toast";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface Message {
   id: string;
@@ -31,12 +48,15 @@ interface Conversation {
 const Messages = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [deleteChatDialogOpen, setDeleteChatDialogOpen] = useState(false);
+  const [chatToDelete, setChatToDelete] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -186,6 +206,72 @@ const Messages = () => {
     }
   };
 
+  const handleUnsendMessage = async (messageId: string) => {
+    if (!user) return;
+
+    const { error } = await supabase
+      .from("messages")
+      .delete()
+      .eq("id", messageId)
+      .eq("sender_id", user.id);
+
+    if (error) {
+      console.error("Error unsending message:", error);
+      toast({
+        title: "Error",
+        description: "Failed to unsend message",
+        variant: "destructive",
+      });
+    } else {
+      setMessages((prev) => prev.filter((m) => m.id !== messageId));
+      toast({
+        title: "Message unsent",
+        description: "The message has been removed",
+      });
+      fetchConversations();
+    }
+  };
+
+  const handleDeleteChat = async () => {
+    if (!user || !chatToDelete) return;
+
+    // Delete all messages in this conversation (both sent and received)
+    const { error } = await supabase
+      .from("messages")
+      .delete()
+      .or(
+        `and(sender_id.eq.${user.id},receiver_id.eq.${chatToDelete}),and(sender_id.eq.${chatToDelete},receiver_id.eq.${user.id})`
+      );
+
+    if (error) {
+      console.error("Error deleting chat:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete chat",
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Chat deleted",
+        description: "The conversation has been removed",
+      });
+      if (selectedConversation === chatToDelete) {
+        setSelectedConversation(null);
+        setMessages([]);
+      }
+      fetchConversations();
+    }
+
+    setDeleteChatDialogOpen(false);
+    setChatToDelete(null);
+  };
+
+  const openDeleteChatDialog = (partnerId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setChatToDelete(partnerId);
+    setDeleteChatDialogOpen(true);
+  };
+
   const selectedPartner = conversations.find((c) => c.partnerId === selectedConversation);
 
   if (authLoading) {
@@ -238,12 +324,12 @@ const Messages = () => {
                 ) : (
                   <div className="divide-y divide-border">
                     {conversations.map((conv) => (
-                      <button
+                      <div
                         key={conv.partnerId}
-                        onClick={() => handleSelectConversation(conv.partnerId)}
-                        className={`w-full p-4 text-left hover:bg-muted/50 transition-colors flex gap-3 ${
+                        className={`w-full p-4 hover:bg-muted/50 transition-colors flex gap-3 cursor-pointer group ${
                           selectedConversation === conv.partnerId ? "bg-muted" : ""
                         }`}
+                        onClick={() => handleSelectConversation(conv.partnerId)}
                       >
                         <div className="w-10 h-10 rounded-full bg-gradient-gold flex items-center justify-center flex-shrink-0">
                           <User className="w-5 h-5 text-navy" />
@@ -251,11 +337,21 @@ const Messages = () => {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between gap-2">
                             <span className="font-medium truncate">{conv.partnerName}</span>
-                            {conv.unreadCount > 0 && (
-                              <span className="bg-gold text-navy text-xs font-bold px-2 py-0.5 rounded-full">
-                                {conv.unreadCount}
-                              </span>
-                            )}
+                            <div className="flex items-center gap-1">
+                              {conv.unreadCount > 0 && (
+                                <span className="bg-gold text-navy text-xs font-bold px-2 py-0.5 rounded-full">
+                                  {conv.unreadCount}
+                                </span>
+                              )}
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                                onClick={(e) => openDeleteChatDialog(conv.partnerId, e)}
+                              >
+                                <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                              </Button>
+                            </div>
                           </div>
                           <p className="text-sm text-muted-foreground truncate">
                             {conv.lastMessage}
@@ -264,7 +360,7 @@ const Messages = () => {
                             {format(new Date(conv.lastMessageTime), "MMM d, HH:mm")}
                           </p>
                         </div>
-                      </button>
+                      </div>
                     ))}
                   </div>
                 )}
@@ -301,27 +397,51 @@ const Messages = () => {
                       {messages.map((message) => (
                         <div
                           key={message.id}
-                          className={`flex ${
+                          className={`flex group ${
                             message.sender_id === user?.id ? "justify-end" : "justify-start"
                           }`}
                         >
-                          <div
-                            className={`max-w-[80%] rounded-lg px-4 py-2 ${
-                              message.sender_id === user?.id
-                                ? "bg-primary text-primary-foreground"
-                                : "bg-muted"
-                            }`}
-                          >
-                            <p className="text-sm">{message.content}</p>
-                            <p
-                              className={`text-xs mt-1 ${
+                          <div className="flex items-center gap-1">
+                            {message.sender_id === user?.id && (
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                                  >
+                                    <MoreVertical className="w-3.5 h-3.5" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem
+                                    className="text-destructive focus:text-destructive"
+                                    onClick={() => handleUnsendMessage(message.id)}
+                                  >
+                                    <Trash2 className="w-4 h-4 mr-2" />
+                                    Unsend
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            )}
+                            <div
+                              className={`max-w-[80%] rounded-lg px-4 py-2 ${
                                 message.sender_id === user?.id
-                                  ? "text-primary-foreground/70"
-                                  : "text-muted-foreground"
+                                  ? "bg-primary text-primary-foreground"
+                                  : "bg-muted"
                               }`}
                             >
-                              {format(new Date(message.created_at), "HH:mm")}
-                            </p>
+                              <p className="text-sm">{message.content}</p>
+                              <p
+                                className={`text-xs mt-1 ${
+                                  message.sender_id === user?.id
+                                    ? "text-primary-foreground/70"
+                                    : "text-muted-foreground"
+                                }`}
+                              >
+                                {format(new Date(message.created_at), "HH:mm")}
+                              </p>
+                            </div>
                           </div>
                         </div>
                       ))}
@@ -364,6 +484,27 @@ const Messages = () => {
       </main>
 
       <Footer />
+
+      {/* Delete Chat Confirmation Dialog */}
+      <AlertDialog open={deleteChatDialogOpen} onOpenChange={setDeleteChatDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Conversation</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this entire conversation? This action cannot be undone and will remove all messages.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteChat}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
