@@ -97,13 +97,13 @@ const ContractCard = ({ contract, onAction }: ContractCardProps) => {
             <span>
               {myConfirmed && otherConfirmed
                 ? "Processing payment..."
-                : isProposer
-                ? otherConfirmed
-                  ? "Work completed - ready for payment"
+                : isProvider
+                ? contract.client_confirmed
+                  ? "Waiting for payment"
                   : "Service in progress"
-                : otherConfirmed
-                ? "Waiting for payment"
-                : "Service in progress"}
+                : contract.provider_confirmed
+                ? "Work completed - ready for payment"
+                : "Provider working..."}
             </span>
           </div>
         )}
@@ -130,51 +130,51 @@ const ContractCard = ({ contract, onAction }: ContractCardProps) => {
             </Button>
           )}
 
-          {/* Accepted status - only the acceptor (non-proposer) can start service */}
-          {contract.status === "accepted" && !isProposer && (
+          {/* Accepted status - PROVIDER starts the service */}
+          {contract.status === "accepted" && isProvider && (
             <Button size="sm" variant="gold" onClick={handleStart} className="flex-1">
               <Play className="w-3 h-3 mr-1" />
               Start Service
             </Button>
           )}
 
-          {contract.status === "accepted" && isProposer && (
+          {contract.status === "accepted" && !isProvider && (
             <Button size="sm" variant="outline" disabled className="flex-1">
               <Clock className="w-3 h-3 mr-1" />
               Waiting to Start
             </Button>
           )}
 
-          {/* In Progress - acceptor marks complete, proposer pays after completion */}
-          {contract.status === "in_progress" && !isProposer && !otherConfirmed && (
+          {/* In Progress - PROVIDER marks complete, CLIENT pays after completion */}
+          {contract.status === "in_progress" && isProvider && !contract.provider_confirmed && (
             <Button size="sm" variant="gold" onClick={handleConfirm} className="flex-1">
               <CheckCircle2 className="w-3 h-3 mr-1" />
               Mark Complete
             </Button>
           )}
 
-          {contract.status === "in_progress" && !isProposer && otherConfirmed && (
+          {contract.status === "in_progress" && isProvider && contract.provider_confirmed && (
             <Button size="sm" variant="outline" disabled className="flex-1">
               <Clock className="w-3 h-3 mr-1" />
               Awaiting Payment
             </Button>
           )}
 
-          {contract.status === "in_progress" && isProposer && !otherConfirmed && (
+          {contract.status === "in_progress" && !isProvider && !contract.provider_confirmed && (
             <Button size="sm" variant="outline" disabled className="flex-1">
               <Play className="w-3 h-3 mr-1" />
               In Progress
             </Button>
           )}
 
-          {contract.status === "in_progress" && isProposer && otherConfirmed && !myConfirmed && (
+          {contract.status === "in_progress" && !isProvider && contract.provider_confirmed && !contract.client_confirmed && (
             <Button size="sm" variant="gold" onClick={handleConfirm} className="flex-1">
               <CreditCard className="w-3 h-3 mr-1" />
               Pay Credits
             </Button>
           )}
 
-          {contract.status === "in_progress" && myConfirmed && otherConfirmed && (
+          {contract.status === "in_progress" && contract.provider_confirmed && contract.client_confirmed && (
             <Button size="sm" variant="outline" disabled className="flex-1">
               <Clock className="w-3 h-3 mr-1" />
               Processing...
