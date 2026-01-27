@@ -25,7 +25,8 @@ interface ContractProposalDialogProps {
   serviceId?: string;
   serviceTitle?: string;
   suggestedCredits?: number;
-  isProvider: boolean;
+  serviceType?: "offer" | "request";
+  serviceOwnerId?: string;
   onSuccess?: () => void;
 }
 
@@ -37,7 +38,8 @@ const ContractProposalDialog = ({
   serviceId,
   serviceTitle,
   suggestedCredits,
-  isProvider,
+  serviceType,
+  serviceOwnerId,
   onSuccess,
 }: ContractProposalDialogProps) => {
   const { user } = useAuth();
@@ -71,9 +73,28 @@ const ContractProposalDialog = ({
     setSending(true);
     setError(null);
 
-    // Determine provider and client based on who is proposing
-    const providerId = isProvider ? user.id : receiverId;
-    const clientId = isProvider ? receiverId : user.id;
+    // Determine provider and client based on service type:
+    // - Offering service: service owner = provider, other user = client
+    // - Requesting service: service owner = client, other user = provider
+    // If no service type, the proposer becomes the client (requesting work)
+    let providerId: string;
+    let clientId: string;
+
+    if (serviceType && serviceOwnerId) {
+      if (serviceType === "offer") {
+        // Service owner is offering work, so they are the provider
+        providerId = serviceOwnerId;
+        clientId = serviceOwnerId === user.id ? receiverId : user.id;
+      } else {
+        // Service owner is requesting work, so they are the client
+        clientId = serviceOwnerId;
+        providerId = serviceOwnerId === user.id ? receiverId : user.id;
+      }
+    } else {
+      // Fallback: proposer is the client (requesting work from receiver)
+      providerId = receiverId;
+      clientId = user.id;
+    }
 
     const { error: insertError } = await supabase.from("contracts").insert({
       service_id: serviceId || null,
