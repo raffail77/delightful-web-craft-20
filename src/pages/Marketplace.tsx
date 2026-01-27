@@ -17,6 +17,17 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -25,7 +36,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
-import { Clock, MapPin, Wifi, Plus, Search, Filter, User, MessageCircle } from "lucide-react";
+import { Clock, MapPin, Wifi, Plus, Search, Filter, User, MessageCircle, Trash2 } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 import MessagingDialog from "@/components/MessagingDialog";
 
@@ -92,6 +103,19 @@ const Marketplace = () => {
     setMessagingReceiver({ id: receiverId, name: receiverName });
     setMessagingService({ id: serviceId, title: serviceTitle, serviceType, serviceOwnerId });
     setMessagingOpen(true);
+  };
+
+  const handleDeleteService = async (serviceId: string) => {
+    const { error } = await supabase
+      .from("services")
+      .delete()
+      .eq("id", serviceId);
+
+    if (error) {
+      toast({ title: "Error", description: "Failed to delete service", variant: "destructive" });
+    } else {
+      toast({ title: "Deleted", description: "Service has been removed" });
+    }
   };
 
   useEffect(() => {
@@ -377,6 +401,7 @@ const Marketplace = () => {
                   service={service} 
                   currentUserId={user?.id}
                   onContact={handleContactProvider}
+                  onDelete={handleDeleteService}
                 />
               ))}
             </div>
@@ -400,7 +425,7 @@ const Marketplace = () => {
   );
 };
 
-const ServiceCard = ({ service, currentUserId, onContact }: { 
+const ServiceCard = ({ service, currentUserId, onContact, onDelete }: { 
   service: Service; 
   currentUserId?: string;
   onContact: (
@@ -411,15 +436,17 @@ const ServiceCard = ({ service, currentUserId, onContact }: {
     serviceType: "offer" | "request",
     serviceOwnerId: string
   ) => void;
+  onDelete: (serviceId: string) => void;
 }) => {
   const showContactButton = currentUserId && service.user_id !== currentUserId;
+  const isOwner = currentUserId === service.user_id;
   
   // For "offering" services: the service owner is the provider (contact provider)
   // For "requesting" services: the service owner is the client (contact receiver)
   const contactLabel = service.service_type === "offer" ? "Contact Provider" : "Contact Receiver";
   
   return (
-    <div className="glass-card p-6 rounded-xl hover:shadow-lg transition-all group">
+    <div className="glass-card p-6 rounded-xl hover:shadow-lg transition-all group relative">
       <div className="flex items-center justify-between mb-3">
         <span
           className={`px-3 py-1 text-xs font-medium rounded-full ${
@@ -430,7 +457,39 @@ const ServiceCard = ({ service, currentUserId, onContact }: {
         >
           {service.service_type === "offer" ? "Offering" : "Requesting"}
         </span>
-        <span className="text-xs text-muted-foreground">{service.category}</span>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-muted-foreground">{service.category}</span>
+          {isOwner && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete Service</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Are you sure you want to delete "{service.title}"? This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() => onDelete(service.id)}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    Delete
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
+        </div>
       </div>
 
       <h3 className="text-lg font-semibold mb-2 group-hover:text-gold transition-colors line-clamp-2">
