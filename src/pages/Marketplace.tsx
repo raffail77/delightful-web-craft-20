@@ -64,7 +64,7 @@ const Marketplace = () => {
   // Messaging state
   const [messagingOpen, setMessagingOpen] = useState(false);
   const [messagingReceiver, setMessagingReceiver] = useState({ id: "", name: "" });
-  const [messagingService, setMessagingService] = useState({ id: "", title: "" });
+  const [messagingService, setMessagingService] = useState<{ id: string; title: string; serviceType?: "offer" | "request"; serviceOwnerId?: string }>({ id: "", title: "" });
 
   // Form state
   const [title, setTitle] = useState("");
@@ -76,14 +76,21 @@ const Marketplace = () => {
   const [isRemote, setIsRemote] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleContactProvider = (receiverId: string, receiverName: string, serviceId: string, serviceTitle: string) => {
+  const handleContactProvider = (
+    receiverId: string, 
+    receiverName: string, 
+    serviceId: string, 
+    serviceTitle: string,
+    serviceType: "offer" | "request",
+    serviceOwnerId: string
+  ) => {
     if (!user) {
-      toast({ title: "Sign in required", description: "Please sign in to contact providers" });
+      toast({ title: "Sign in required", description: "Please sign in to contact this user" });
       navigate("/auth");
       return;
     }
     setMessagingReceiver({ id: receiverId, name: receiverName });
-    setMessagingService({ id: serviceId, title: serviceTitle });
+    setMessagingService({ id: serviceId, title: serviceTitle, serviceType, serviceOwnerId });
     setMessagingOpen(true);
   };
 
@@ -384,6 +391,8 @@ const Marketplace = () => {
         receiverName={messagingReceiver.name}
         serviceId={messagingService.id}
         serviceTitle={messagingService.title}
+        serviceType={messagingService.serviceType}
+        serviceOwnerId={messagingService.serviceOwnerId}
       />
 
       <Footer />
@@ -394,9 +403,20 @@ const Marketplace = () => {
 const ServiceCard = ({ service, currentUserId, onContact }: { 
   service: Service; 
   currentUserId?: string;
-  onContact: (receiverId: string, receiverName: string, serviceId: string, serviceTitle: string) => void;
+  onContact: (
+    receiverId: string, 
+    receiverName: string, 
+    serviceId: string, 
+    serviceTitle: string,
+    serviceType: "offer" | "request",
+    serviceOwnerId: string
+  ) => void;
 }) => {
   const showContactButton = currentUserId && service.user_id !== currentUserId;
+  
+  // For "offering" services: the service owner is the provider (contact provider)
+  // For "requesting" services: the service owner is the client (contact receiver)
+  const contactLabel = service.service_type === "offer" ? "Contact Provider" : "Contact Receiver";
   
   return (
     <div className="glass-card p-6 rounded-xl hover:shadow-lg transition-all group">
@@ -456,11 +476,13 @@ const ServiceCard = ({ service, currentUserId, onContact }: {
             service.user_id,
             service.profiles?.full_name || "User",
             service.id,
-            service.title
+            service.title,
+            service.service_type,
+            service.user_id
           )}
         >
           <MessageCircle className="w-4 h-4" />
-          Contact Provider
+          {contactLabel}
         </Button>
       )}
     </div>
