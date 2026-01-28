@@ -41,6 +41,7 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/auth/callback" element={<AuthCallback />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/profile/:slug" element={<Profile />} />
             <Route path="/marketplace" element={<Marketplace />} />
             <Route path="/messages" element={<Messages />} />
             <Route path="/transactions" element={<Transactions />} />
