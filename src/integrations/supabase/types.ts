@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      certifications: {
+        Row: {
+          created_at: string | null
+          credential_id: string | null
+          credential_url: string | null
+          expiry_date: string | null
+          id: string
+          issue_date: string | null
+          issuing_organization: string
+          name: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          credential_id?: string | null
+          credential_url?: string | null
+          expiry_date?: string | null
+          id?: string
+          issue_date?: string | null
+          issuing_organization: string
+          name: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          credential_id?: string | null
+          credential_url?: string | null
+          expiry_date?: string | null
+          id?: string
+          issue_date?: string | null
+          issuing_organization?: string
+          name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       contracts: {
         Row: {
           agreed_credits: number
@@ -83,6 +119,98 @@ export type Database = {
           },
         ]
       }
+      education: {
+        Row: {
+          created_at: string | null
+          degree: string
+          description: string | null
+          end_date: string | null
+          field_of_study: string | null
+          grade: string | null
+          id: string
+          institution: string
+          start_date: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          degree: string
+          description?: string | null
+          end_date?: string | null
+          field_of_study?: string | null
+          grade?: string | null
+          id?: string
+          institution: string
+          start_date?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          degree?: string
+          description?: string | null
+          end_date?: string | null
+          field_of_study?: string | null
+          grade?: string | null
+          id?: string
+          institution?: string
+          start_date?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      endorsements: {
+        Row: {
+          created_at: string | null
+          endorser_id: string
+          id: string
+          skill_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          endorser_id: string
+          id?: string
+          skill_id: string
+        }
+        Update: {
+          created_at?: string | null
+          endorser_id?: string
+          id?: string
+          skill_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "endorsements_skill_id_fkey"
+            columns: ["skill_id"]
+            isOneToOne: false
+            referencedRelation: "user_skills"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      followers: {
+        Row: {
+          created_at: string | null
+          follower_id: string
+          following_id: string
+          id: string
+        }
+        Insert: {
+          created_at?: string | null
+          follower_id: string
+          following_id: string
+          id?: string
+        }
+        Update: {
+          created_at?: string | null
+          follower_id?: string
+          following_id?: string
+          id?: string
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           content: string
@@ -121,44 +249,193 @@ export type Database = {
           },
         ]
       }
+      portfolio_items: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          image_url: string | null
+          media_type: string | null
+          project_url: string | null
+          tags: string[] | null
+          title: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          media_type?: string | null
+          project_url?: string | null
+          tags?: string[] | null
+          title: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          media_type?: string | null
+          project_url?: string | null
+          tags?: string[] | null
+          title?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
+          about: string | null
+          availability_status: string | null
           avatar_url: string | null
           bio: string | null
+          cover_url: string | null
           created_at: string
           email: string | null
           full_name: string | null
+          headline: string | null
           id: string
+          is_verified: boolean | null
+          location: string | null
+          profile_slug: string | null
+          profile_visibility: string | null
+          response_time_hours: number | null
+          show_email: boolean | null
+          show_location: boolean | null
           skills: string[] | null
           time_credits: number
           updated_at: string
           user_id: string
         }
         Insert: {
+          about?: string | null
+          availability_status?: string | null
           avatar_url?: string | null
           bio?: string | null
+          cover_url?: string | null
           created_at?: string
           email?: string | null
           full_name?: string | null
+          headline?: string | null
           id?: string
+          is_verified?: boolean | null
+          location?: string | null
+          profile_slug?: string | null
+          profile_visibility?: string | null
+          response_time_hours?: number | null
+          show_email?: boolean | null
+          show_location?: boolean | null
           skills?: string[] | null
           time_credits?: number
           updated_at?: string
           user_id: string
         }
         Update: {
+          about?: string | null
+          availability_status?: string | null
           avatar_url?: string | null
           bio?: string | null
+          cover_url?: string | null
           created_at?: string
           email?: string | null
           full_name?: string | null
+          headline?: string | null
           id?: string
+          is_verified?: boolean | null
+          location?: string | null
+          profile_slug?: string | null
+          profile_visibility?: string | null
+          response_time_hours?: number | null
+          show_email?: boolean | null
+          show_location?: boolean | null
           skills?: string[] | null
           time_credits?: number
           updated_at?: string
           user_id?: string
         }
         Relationships: []
+      }
+      recommendations: {
+        Row: {
+          content: string
+          created_at: string | null
+          id: string
+          is_visible: boolean | null
+          recommendee_id: string
+          recommender_id: string
+          relationship: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          id?: string
+          is_visible?: boolean | null
+          recommendee_id: string
+          recommender_id: string
+          relationship?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          id?: string
+          is_visible?: boolean | null
+          recommendee_id?: string
+          recommender_id?: string
+          relationship?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      reviews: {
+        Row: {
+          content: string | null
+          contract_id: string | null
+          created_at: string | null
+          id: string
+          rating: number
+          reviewee_id: string
+          reviewer_id: string
+          title: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          content?: string | null
+          contract_id?: string | null
+          created_at?: string | null
+          id?: string
+          rating: number
+          reviewee_id: string
+          reviewer_id: string
+          title?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          content?: string | null
+          contract_id?: string | null
+          created_at?: string | null
+          id?: string
+          rating?: number
+          reviewee_id?: string
+          reviewer_id?: string
+          title?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reviews_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       services: {
         Row: {
@@ -252,6 +529,150 @@ export type Database = {
           },
         ]
       }
+      user_categories: {
+        Row: {
+          category: Database["public"]["Enums"]["professional_category"]
+          created_at: string | null
+          custom_category: string | null
+          id: string
+          user_id: string
+        }
+        Insert: {
+          category: Database["public"]["Enums"]["professional_category"]
+          created_at?: string | null
+          custom_category?: string | null
+          id?: string
+          user_id: string
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["professional_category"]
+          created_at?: string | null
+          custom_category?: string | null
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_languages: {
+        Row: {
+          created_at: string | null
+          id: string
+          language: string
+          proficiency: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          language: string
+          proficiency?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          language?: string
+          proficiency?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_skills: {
+        Row: {
+          category: Database["public"]["Enums"]["professional_category"] | null
+          created_at: string | null
+          endorsement_count: number | null
+          id: string
+          proficiency_level: number | null
+          skill_name: string
+          user_id: string
+        }
+        Insert: {
+          category?: Database["public"]["Enums"]["professional_category"] | null
+          created_at?: string | null
+          endorsement_count?: number | null
+          id?: string
+          proficiency_level?: number | null
+          skill_name: string
+          user_id: string
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["professional_category"] | null
+          created_at?: string | null
+          endorsement_count?: number | null
+          id?: string
+          proficiency_level?: number | null
+          skill_name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_tools: {
+        Row: {
+          created_at: string | null
+          id: string
+          proficiency_level: number | null
+          tool_name: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          proficiency_level?: number | null
+          tool_name: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          proficiency_level?: number | null
+          tool_name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      work_experience: {
+        Row: {
+          company: string
+          created_at: string | null
+          description: string | null
+          end_date: string | null
+          id: string
+          is_current: boolean | null
+          location: string | null
+          start_date: string
+          title: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          company: string
+          created_at?: string | null
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          is_current?: boolean | null
+          location?: string | null
+          start_date: string
+          title: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          company?: string
+          created_at?: string | null
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          is_current?: boolean | null
+          location?: string | null
+          start_date?: string
+          title?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -276,6 +697,20 @@ export type Database = {
         | "completed"
         | "disputed"
         | "cancelled"
+      professional_category:
+        | "web_developer"
+        | "software_engineer"
+        | "ui_ux_designer"
+        | "graphic_artist"
+        | "digital_marketer"
+        | "social_media_consultant"
+        | "content_creator"
+        | "data_analyst"
+        | "mobile_app_developer"
+        | "video_editor"
+        | "photographer"
+        | "business_consultant"
+        | "other"
       service_type: "offer" | "request"
       transaction_status: "pending" | "completed" | "cancelled" | "disputed"
       transaction_type: "service_payment" | "refund" | "bonus" | "adjustment"
@@ -413,6 +848,21 @@ export const Constants = {
         "completed",
         "disputed",
         "cancelled",
+      ],
+      professional_category: [
+        "web_developer",
+        "software_engineer",
+        "ui_ux_designer",
+        "graphic_artist",
+        "digital_marketer",
+        "social_media_consultant",
+        "content_creator",
+        "data_analyst",
+        "mobile_app_developer",
+        "video_editor",
+        "photographer",
+        "business_consultant",
+        "other",
       ],
       service_type: ["offer", "request"],
       transaction_status: ["pending", "completed", "cancelled", "disputed"],
