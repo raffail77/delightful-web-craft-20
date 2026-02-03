@@ -15,10 +15,10 @@ import { ProfileReviews } from "@/components/profile/ProfileReviews";
 import { ProfileEditDialog } from "@/components/profile/ProfileEditDialog";
 import { ProfileCompleteness } from "@/components/profile/ProfileCompleteness";
 import { Button } from "@/components/ui/button";
-import { Clock, ArrowLeft, LogOut, Lock, UserX } from "lucide-react";
+import { Clock, ArrowLeft, LogOut, UserX } from "lucide-react";
 import MessagingDialog from "@/components/MessagingDialog";
 
-type PrivacyStatus = "accessible" | "private" | "members_only" | "not_found";
+type PrivacyStatus = "accessible" | "members_only" | "not_found";
 
 const Profile = () => {
   const { user, signOut, loading: authLoading } = useAuth();
@@ -122,25 +122,21 @@ const Profile = () => {
     );
   }
 
-  // Handle privacy-restricted profiles
+  // Handle privacy-restricted profiles (members only when not logged in)
   if (privacyStatus === "not_found" && slug) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center max-w-md mx-auto px-4">
           <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
-            {user ? (
-              <Lock className="w-8 h-8 text-muted-foreground" />
-            ) : (
-              <UserX className="w-8 h-8 text-muted-foreground" />
-            )}
+            <UserX className="w-8 h-8 text-muted-foreground" />
           </div>
           <h2 className="text-xl font-serif font-bold mb-2">
-            {user ? "Profile Not Accessible" : "Profile Not Available"}
+            Profile Not Available
           </h2>
           <p className="text-muted-foreground mb-6">
             {user 
-              ? "This profile is set to private and cannot be viewed."
-              : "This profile may be private or only visible to logged-in members. Please sign in to view more profiles."}
+              ? "This profile could not be found."
+              : "This profile is only visible to logged-in members. Please sign in to view this profile."}
           </p>
           <div className="flex gap-3 justify-center">
             <Button variant="outline" onClick={() => navigate("/")}>
