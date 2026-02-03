@@ -234,18 +234,25 @@ const ContractCard = ({ contract, onAction }: ContractCardProps) => {
               </Button>
             )}
 
-            {/* Completed status - Show review button if not yet reviewed */}
-            {contract.status === "completed" && !hasReviewed && (
+            {/* Completed status - Show review button ONLY to clients (payers), not providers */}
+            {contract.status === "completed" && !isProvider && !hasReviewed && (
               <Button size="sm" variant="gold" onClick={() => setReviewOpen(true)} className="flex-1">
                 <Star className="w-3 h-3 mr-1" />
                 Leave Review
               </Button>
             )}
 
-            {contract.status === "completed" && hasReviewed && (
+            {contract.status === "completed" && !isProvider && hasReviewed && (
               <Button size="sm" variant="outline" disabled className="flex-1">
                 <CheckCircle2 className="w-3 h-3 mr-1" />
                 Reviewed
+              </Button>
+            )}
+
+            {contract.status === "completed" && isProvider && (
+              <Button size="sm" variant="outline" disabled className="flex-1">
+                <CheckCircle2 className="w-3 h-3 mr-1" />
+                Completed
               </Button>
             )}
           </div>
