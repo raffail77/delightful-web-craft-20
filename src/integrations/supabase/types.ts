@@ -678,6 +678,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      complete_contract: {
+        Args: { p_contract_id: string; p_user_id: string }
+        Returns: Json
+      }
       transfer_credits: {
         Args: {
           p_amount: number
