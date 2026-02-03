@@ -36,7 +36,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
-import { Clock, MapPin, Wifi, Plus, Search, Filter, User, MessageCircle, Trash2 } from "lucide-react";
+import { Clock, MapPin, Wifi, Plus, Search, Filter, User, MessageCircle, Trash2, ExternalLink } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 import MessagingDialog from "@/components/MessagingDialog";
 
@@ -499,9 +499,22 @@ const ServiceCard = ({ service, currentUserId, onContact, onDelete }: {
       <p className="text-sm text-muted-foreground mb-4 line-clamp-3">{service.description}</p>
 
       {service.profiles?.full_name && (
-        <div className="flex items-center gap-2 mb-4 text-sm text-muted-foreground">
-          <User className="w-4 h-4" />
-          <span>Posted by {service.profiles.full_name}</span>
+        <div className="flex items-center justify-between mb-4 text-sm text-muted-foreground">
+          <div className="flex items-center gap-2">
+            <User className="w-4 h-4" />
+            <span>Posted by {service.profiles.full_name}</span>
+          </div>
+          {/* Show profile link only for offering services - privacy is enforced at profile page level */}
+          {service.service_type === "offer" && (
+            <a
+              href={`/profile/${service.user_id}`}
+              className="flex items-center gap-1 text-primary hover:text-gold transition-colors text-xs"
+              onClick={(e) => e.stopPropagation()}
+            >
+              View Profile
+              <ExternalLink className="w-3 h-3" />
+            </a>
+          )}
         </div>
       )}
 
