@@ -262,7 +262,6 @@ export const ProfileEditDialog = ({
                 <SelectContent>
                   <SelectItem value="public">Public - Visible to everyone</SelectItem>
                   <SelectItem value="members">Members only - Visible to logged-in users</SelectItem>
-                  <SelectItem value="private">Private - Only visible to you</SelectItem>
                 </SelectContent>
               </Select>
             </div>
