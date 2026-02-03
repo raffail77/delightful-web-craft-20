@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { useCredits } from "@/hooks/useCredits";
 
 export type ContractStatus = "proposed" | "accepted" | "in_progress" | "completed" | "disputed" | "cancelled";
 
@@ -27,7 +26,6 @@ export interface Contract {
 export function useContracts(otherUserId?: string) {
   const { user } = useAuth();
   const { toast } = useToast();
-  const { transferCredits } = useCredits();
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -147,86 +145,34 @@ export function useContracts(otherUserId?: string) {
   const confirmCompletion = async (contract: Contract) => {
     if (!user) return { success: false };
 
-    const isProvider = contract.provider_id === user.id;
-    const isClient = contract.client_id === user.id;
-    const updateField = isProvider ? "provider_confirmed" : "client_confirmed";
+    // Use server-side atomic function to handle confirmation and payment
+    const { data, error } = await supabase.rpc('complete_contract', {
+      p_contract_id: contract.id,
+      p_user_id: user.id
+    });
 
-    // Update confirmation
-    const { error: updateError } = await supabase
-      .from("contracts")
-      .update({ [updateField]: true })
-      .eq("id", contract.id);
-
-    if (updateError) {
-      console.error("Error confirming completion:", updateError);
+    if (error) {
+      console.error("Error confirming completion:", error);
       toast({
         title: "Error",
-        description: "Failed to confirm completion",
+        description: error.message || "Failed to confirm completion",
         variant: "destructive",
       });
       return { success: false };
     }
 
-    // Re-fetch the contract to get the latest state (handles race conditions)
-    const { data: updatedContract, error: fetchError } = await supabase
-      .from("contracts")
-      .select("*")
-      .eq("id", contract.id)
-      .single();
-
-    if (fetchError || !updatedContract) {
-      console.error("Error fetching updated contract:", fetchError);
-      return { success: false };
-    }
-
-    // Check if both are now confirmed
-    const bothConfirmed = updatedContract.provider_confirmed && updatedContract.client_confirmed;
-
-    if (bothConfirmed && updatedContract.status !== "completed") {
-      // Client pays provider - only the client should initiate the transfer
-      if (isClient) {
-        const result = await transferCredits(
-          contract.provider_id,
-          contract.agreed_credits,
-          contract.service_id || undefined,
-          `Contract payment: ${contract.title}`
-        );
-
-        if (result.success) {
-          // Update contract to completed with transaction ID
-          await supabase
-            .from("contracts")
-            .update({
-              status: "completed",
-              completed_at: new Date().toISOString(),
-              transaction_id: result.transactionId,
-            })
-            .eq("id", contract.id);
-
-          toast({
-            title: "Contract Completed!",
-            description: `${contract.agreed_credits} credits have been transferred to the provider`,
-          });
-        } else {
-          toast({
-            title: "Payment Failed",
-            description: "Could not process the credit transfer",
-            variant: "destructive",
-          });
-          return { success: false };
-        }
-      } else {
-        // Provider confirmed last - the client needs to process the payment
-        // The contract will be completed when the client's UI refreshes and sees both confirmed
-        toast({
-          title: "Completion Confirmed",
-          description: "Both parties confirmed! The client will complete the payment.",
-        });
-      }
-    } else if (!bothConfirmed) {
+    // Cast and handle response from server
+    const result = data as { completed?: boolean; message?: string } | null;
+    
+    if (result?.completed) {
+      toast({
+        title: "Contract Completed!",
+        description: `${contract.agreed_credits} credits have been transferred to the provider`,
+      });
+    } else {
       toast({
         title: "Completion Confirmed",
-        description: "Waiting for the other party to confirm",
+        description: result?.message || "Waiting for the other party to confirm",
       });
     }
 
