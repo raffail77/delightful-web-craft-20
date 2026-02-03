@@ -15,8 +15,10 @@ import { ProfileReviews } from "@/components/profile/ProfileReviews";
 import { ProfileEditDialog } from "@/components/profile/ProfileEditDialog";
 import { ProfileCompleteness } from "@/components/profile/ProfileCompleteness";
 import { Button } from "@/components/ui/button";
-import { Clock, ArrowLeft, LogOut } from "lucide-react";
+import { Clock, ArrowLeft, LogOut, Lock, UserX } from "lucide-react";
 import MessagingDialog from "@/components/MessagingDialog";
+
+type PrivacyStatus = "accessible" | "private" | "members_only" | "not_found";
 
 const Profile = () => {
   const { user, signOut, loading: authLoading } = useAuth();
@@ -27,28 +29,35 @@ const Profile = () => {
   const [isOwnProfile, setIsOwnProfile] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [messagingOpen, setMessagingOpen] = useState(false);
+  const [privacyStatus, setPrivacyStatus] = useState<PrivacyStatus>("accessible");
 
   // Determine which profile to show
   useEffect(() => {
     const determineProfile = async () => {
       if (slug) {
         // Viewing someone else's profile by slug or user_id
-        const { data } = await supabase
+        // RLS will filter based on privacy settings
+        const { data, error } = await supabase
           .from("profiles")
-          .select("user_id")
+          .select("user_id, profile_visibility")
           .or(`profile_slug.eq.${slug},user_id.eq.${slug}`)
           .maybeSingle();
 
         if (data) {
           setProfileUserId(data.user_id);
           setIsOwnProfile(user?.id === data.user_id);
+          setPrivacyStatus("accessible");
         } else {
-          navigate("/404");
+          // Profile not found - could be private or doesn't exist
+          // Check if it's a privacy restriction by trying to see if the slug exists at all
+          // For private profiles, RLS will hide them, so we show appropriate message
+          setPrivacyStatus("not_found");
         }
       } else if (user) {
         // Viewing own profile
         setProfileUserId(user.id);
         setIsOwnProfile(true);
+        setPrivacyStatus("accessible");
       }
     };
 
@@ -108,6 +117,42 @@ const Profile = () => {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="w-12 h-12 rounded-xl bg-gradient-gold flex items-center justify-center animate-pulse">
           <Clock className="w-6 h-6 text-navy" />
+        </div>
+      </div>
+    );
+  }
+
+  // Handle privacy-restricted profiles
+  if (privacyStatus === "not_found" && slug) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center max-w-md mx-auto px-4">
+          <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
+            {user ? (
+              <Lock className="w-8 h-8 text-muted-foreground" />
+            ) : (
+              <UserX className="w-8 h-8 text-muted-foreground" />
+            )}
+          </div>
+          <h2 className="text-xl font-serif font-bold mb-2">
+            {user ? "Profile Not Accessible" : "Profile Not Available"}
+          </h2>
+          <p className="text-muted-foreground mb-6">
+            {user 
+              ? "This profile is set to private and cannot be viewed."
+              : "This profile may be private or only visible to logged-in members. Please sign in to view more profiles."}
+          </p>
+          <div className="flex gap-3 justify-center">
+            <Button variant="outline" onClick={() => navigate("/")}>
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Home
+            </Button>
+            {!user && (
+              <Button variant="gold" onClick={() => navigate("/auth")}>
+                Sign In
+              </Button>
+            )}
+          </div>
         </div>
       </div>
     );
