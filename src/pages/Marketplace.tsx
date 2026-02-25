@@ -39,6 +39,7 @@ import { Switch } from "@/components/ui/switch";
 import { Clock, MapPin, Wifi, Plus, Search, Filter, User, MessageCircle, Trash2, ExternalLink } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 import MessagingDialog from "@/components/MessagingDialog";
+import ServiceDetailDialog from "@/components/marketplace/ServiceDetailDialog";
 
 type Service = Database["public"]["Tables"]["services"]["Row"] & {
   profiles?: { full_name: string | null } | null;
@@ -76,6 +77,9 @@ const Marketplace = () => {
   const [messagingOpen, setMessagingOpen] = useState(false);
   const [messagingReceiver, setMessagingReceiver] = useState({ id: "", name: "" });
   const [messagingService, setMessagingService] = useState<{ id: string; title: string; serviceType?: "offer" | "request"; serviceOwnerId?: string }>({ id: "", title: "" });
+
+  // Detail dialog state
+  const [detailService, setDetailService] = useState<Service | null>(null);
 
   // Form state
   const [title, setTitle] = useState("");
@@ -402,12 +406,33 @@ const Marketplace = () => {
                   currentUserId={user?.id}
                   onContact={handleContactProvider}
                   onDelete={handleDeleteService}
+                  onDetail={setDetailService}
                 />
               ))}
             </div>
           )}
         </div>
       </main>
+
+      <ServiceDetailDialog
+        open={!!detailService}
+        onOpenChange={(open) => !open && setDetailService(null)}
+        service={detailService}
+        currentUserId={user?.id}
+        onContact={() => {
+          if (detailService) {
+            setDetailService(null);
+            handleContactProvider(
+              detailService.user_id,
+              detailService.profiles?.full_name || "User",
+              detailService.id,
+              detailService.title,
+              detailService.service_type,
+              detailService.user_id
+            );
+          }
+        }}
+      />
 
       <MessagingDialog
         open={messagingOpen}
@@ -425,7 +450,7 @@ const Marketplace = () => {
   );
 };
 
-const ServiceCard = ({ service, currentUserId, onContact, onDelete }: { 
+const ServiceCard = ({ service, currentUserId, onContact, onDelete, onDetail }: { 
   service: Service; 
   currentUserId?: string;
   onContact: (
@@ -437,16 +462,17 @@ const ServiceCard = ({ service, currentUserId, onContact, onDelete }: {
     serviceOwnerId: string
   ) => void;
   onDelete: (serviceId: string) => void;
+  onDetail: (service: Service) => void;
 }) => {
   const showContactButton = currentUserId && service.user_id !== currentUserId;
   const isOwner = currentUserId === service.user_id;
-  
-  // For "offering" services: the service owner is the provider (contact provider)
-  // For "requesting" services: the service owner is the client (contact receiver)
   const contactLabel = service.service_type === "offer" ? "Contact Provider" : "Contact Receiver";
   
   return (
-    <div className="glass-card p-6 rounded-xl hover:shadow-lg transition-all group relative">
+    <div 
+      className="glass-card p-6 rounded-xl hover:shadow-lg transition-all group relative cursor-pointer"
+      onClick={() => onDetail(service)}
+    >
       <div className="flex items-center justify-between mb-3">
         <span
           className={`px-3 py-1 text-xs font-medium rounded-full ${
@@ -466,6 +492,7 @@ const ServiceCard = ({ service, currentUserId, onContact, onDelete }: {
                   variant="ghost"
                   size="icon"
                   className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                  onClick={(e) => e.stopPropagation()}
                 >
                   <Trash2 className="w-4 h-4" />
                 </Button>
@@ -544,14 +571,14 @@ const ServiceCard = ({ service, currentUserId, onContact, onDelete }: {
           variant="outline"
           size="sm"
           className="w-full mt-4 gap-2"
-          onClick={() => onContact(
+          onClick={(e) => { e.stopPropagation(); onContact(
             service.user_id,
             service.profiles?.full_name || "User",
             service.id,
             service.title,
             service.service_type,
             service.user_id
-          )}
+          ); }}
         >
           <MessageCircle className="w-4 h-4" />
           {contactLabel}
