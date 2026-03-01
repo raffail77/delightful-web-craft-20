@@ -27,6 +27,14 @@ import Status from "./pages/Status";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
 import CookiePolicy from "./pages/CookiePolicy";
+import AdminLayout from "./components/admin/AdminLayout";
+import AdminOverview from "./pages/admin/AdminOverview";
+import AdminUsers from "./pages/admin/AdminUsers";
+import AdminServices from "./pages/admin/AdminServices";
+import AdminContracts from "./pages/admin/AdminContracts";
+import AdminTransactions from "./pages/admin/AdminTransactions";
+import AdminReviews from "./pages/admin/AdminReviews";
+import AdminChatbot from "./pages/admin/AdminChatbot";
 
 const queryClient = new QueryClient();
 
@@ -60,6 +68,16 @@ const App = () => (
             <Route path="/privacy" element={<PrivacyPolicy />} />
             <Route path="/terms" element={<TermsOfService />} />
             <Route path="/cookies" element={<CookiePolicy />} />
+            {/* Admin Routes */}
+            <Route path="/admin" element={<AdminLayout />}>
+              <Route index element={<AdminOverview />} />
+              <Route path="users" element={<AdminUsers />} />
+              <Route path="services" element={<AdminServices />} />
+              <Route path="contracts" element={<AdminContracts />} />
+              <Route path="transactions" element={<AdminTransactions />} />
+              <Route path="reviews" element={<AdminReviews />} />
+              <Route path="chatbot" element={<AdminChatbot />} />
+            </Route>
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
