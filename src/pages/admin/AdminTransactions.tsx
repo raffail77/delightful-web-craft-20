@@ -3,7 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { CreditCard } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { CreditCard, Search } from "lucide-react";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
@@ -21,6 +22,7 @@ interface Transaction {
 export default function AdminTransactions() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
     const fetch = async () => {
@@ -34,13 +36,27 @@ export default function AdminTransactions() {
     fetch();
   }, []);
 
+  const filtered = transactions.filter(
+    (t) => (t.description || "").toLowerCase().includes(search.toLowerCase()) ||
+      t.transaction_type.toLowerCase().includes(search.toLowerCase()) ||
+      t.status.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const totalAmount = filtered.reduce((sum, t) => sum + t.amount, 0);
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-serif font-bold text-foreground flex items-center gap-2">
-          <CreditCard className="h-6 w-6 text-secondary" /> Payment Transactions
-        </h1>
-        <p className="text-muted-foreground text-sm">{transactions.length} total transactions</p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-serif font-bold text-foreground flex items-center gap-2">
+            <CreditCard className="h-6 w-6 text-secondary" /> Payment Transactions
+          </h1>
+          <p className="text-muted-foreground text-sm">{transactions.length} total transactions · {totalAmount} cr total volume</p>
+        </div>
+        <div className="relative w-full sm:w-72">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input placeholder="Search transactions..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+        </div>
       </div>
 
       <Card className="shadow-soft">
@@ -56,10 +72,11 @@ export default function AdminTransactions() {
                   <TableHead>Amount</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Created</TableHead>
+                  <TableHead>Completed</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {transactions.map((t) => (
+                {filtered.map((t) => (
                   <TableRow key={t.id}>
                     <TableCell className="font-medium max-w-[200px] truncate">{t.description || "—"}</TableCell>
                     <TableCell><Badge variant="outline" className="text-xs">{t.transaction_type}</Badge></TableCell>
@@ -70,6 +87,7 @@ export default function AdminTransactions() {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-muted-foreground text-sm">{new Date(t.created_at).toLocaleDateString()}</TableCell>
+                    <TableCell className="text-muted-foreground text-sm">{t.completed_at ? new Date(t.completed_at).toLocaleDateString() : "—"}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
