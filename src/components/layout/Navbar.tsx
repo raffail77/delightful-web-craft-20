@@ -3,7 +3,8 @@ import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCredits } from "@/hooks/useCredits";
-import { Clock, Menu, X, User, LogOut, MessageCircle, Coins, History, FileText, LayoutDashboard } from "lucide-react";
+import { Clock, Menu, X, User, LogOut, MessageCircle, Coins, History, FileText, LayoutDashboard, Shield } from "lucide-react";
+import { useAdminRole } from "@/hooks/useAdminRole";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,6 +18,7 @@ const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { user, loading, signOut } = useAuth();
   const { credits, isLoading: creditsLoading } = useCredits();
+  const { isAdmin } = useAdminRole();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -107,11 +109,17 @@ const Navbar = () => {
                       </span>
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-48">
-                    <DropdownMenuItem onClick={() => navigate("/dashboard")}>
-                      <LayoutDashboard className="w-4 h-4 mr-2" />
-                      Dashboard
-                    </DropdownMenuItem>
+                    <DropdownMenuContent align="end" className="w-48">
+                      {isAdmin && (
+                        <DropdownMenuItem onClick={() => navigate("/admin")}>
+                          <Shield className="w-4 h-4 mr-2" />
+                          Admin Panel
+                        </DropdownMenuItem>
+                      )}
+                      <DropdownMenuItem onClick={() => navigate("/dashboard")}>
+                        <LayoutDashboard className="w-4 h-4 mr-2" />
+                        Dashboard
+                      </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => navigate("/profile")}>
                       <User className="w-4 h-4 mr-2" />
                       Profile
@@ -194,6 +202,19 @@ const Navbar = () => {
                         {creditsLoading ? "..." : credits} Credits
                       </span>
                     </div>
+                    {isAdmin && (
+                      <Button
+                        variant="ghost"
+                        className="w-full justify-start text-secondary"
+                        onClick={() => {
+                          navigate("/admin");
+                          setIsMobileMenuOpen(false);
+                        }}
+                      >
+                        <Shield className="w-4 h-4 mr-2" />
+                        Admin Panel
+                      </Button>
+                    )}
                     <Button
                       variant="ghost"
                       className="w-full justify-start"
