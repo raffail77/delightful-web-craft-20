@@ -3,10 +3,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Star } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Star, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface Review {
   id: string;
@@ -20,17 +26,23 @@ export default function AdminReviews() {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetch = async () => {
-      const { data } = await supabase
-        .from("reviews")
-        .select("id, rating, title, content, created_at")
-        .order("created_at", { ascending: false });
-      setReviews(data || []);
-      setLoading(false);
-    };
-    fetch();
-  }, []);
+  const fetchReviews = async () => {
+    const { data } = await supabase
+      .from("reviews")
+      .select("id, rating, title, content, created_at")
+      .order("created_at", { ascending: false });
+    setReviews(data || []);
+    setLoading(false);
+  };
+
+  useEffect(() => { fetchReviews(); }, []);
+
+  const handleDelete = async (id: string) => {
+    const { error } = await supabase.from("reviews").delete().eq("id", id);
+    if (error) { toast.error("Failed to delete review"); return; }
+    toast.success("Review deleted");
+    fetchReviews();
+  };
 
   return (
     <div className="space-y-6">
@@ -55,6 +67,7 @@ export default function AdminReviews() {
                   <TableHead>Rating</TableHead>
                   <TableHead>Content</TableHead>
                   <TableHead>Date</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -70,6 +83,29 @@ export default function AdminReviews() {
                     </TableCell>
                     <TableCell className="max-w-[300px] truncate text-muted-foreground text-sm">{r.content || "—"}</TableCell>
                     <TableCell className="text-muted-foreground text-sm">{r.created_at ? new Date(r.created_at).toLocaleDateString() : "—"}</TableCell>
+                    <TableCell className="text-right">
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8" title="Delete Review">
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete Review</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This will permanently remove this review. This action cannot be undone.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => handleDelete(r.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>

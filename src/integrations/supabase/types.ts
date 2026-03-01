@@ -300,6 +300,7 @@ export type Database = {
           full_name: string | null
           headline: string | null
           id: string
+          is_suspended: boolean | null
           is_verified: boolean | null
           location: string | null
           profile_slug: string | null
@@ -323,6 +324,7 @@ export type Database = {
           full_name?: string | null
           headline?: string | null
           id?: string
+          is_suspended?: boolean | null
           is_verified?: boolean | null
           location?: string | null
           profile_slug?: string | null
@@ -346,6 +348,7 @@ export type Database = {
           full_name?: string | null
           headline?: string | null
           id?: string
+          is_suspended?: boolean | null
           is_verified?: boolean | null
           location?: string | null
           profile_slug?: string | null

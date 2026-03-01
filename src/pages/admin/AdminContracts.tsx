@@ -3,10 +3,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { FileText } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { FileText, Trash2, CheckCircle, XCircle } from "lucide-react";
+import { toast } from "sonner";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface Contract {
   id: string;
@@ -23,17 +29,32 @@ export default function AdminContracts() {
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetch = async () => {
-      const { data } = await supabase
-        .from("contracts")
-        .select("id, title, status, agreed_credits, provider_confirmed, client_confirmed, created_at, completed_at")
-        .order("created_at", { ascending: false });
-      setContracts(data || []);
-      setLoading(false);
-    };
-    fetch();
-  }, []);
+  const fetchContracts = async () => {
+    const { data } = await supabase
+      .from("contracts")
+      .select("id, title, status, agreed_credits, provider_confirmed, client_confirmed, created_at, completed_at")
+      .order("created_at", { ascending: false });
+    setContracts(data || []);
+    setLoading(false);
+  };
+
+  useEffect(() => { fetchContracts(); }, []);
+
+  const updateStatus = async (id: string, status: string) => {
+    const updates: Record<string, any> = { status };
+    if (status === "cancelled") updates.completed_at = new Date().toISOString();
+    const { error } = await supabase.from("contracts").update(updates).eq("id", id);
+    if (error) { toast.error("Failed to update contract"); return; }
+    toast.success(`Contract ${status === "cancelled" ? "cancelled" : "approved"}`);
+    fetchContracts();
+  };
+
+  const handleDelete = async (id: string) => {
+    const { error } = await supabase.from("contracts").delete().eq("id", id);
+    if (error) { toast.error("Failed to delete contract"); return; }
+    toast.success("Contract deleted");
+    fetchContracts();
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -69,6 +90,7 @@ export default function AdminContracts() {
                   <TableHead>Client OK</TableHead>
                   <TableHead>Created</TableHead>
                   <TableHead>Completed</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -81,6 +103,41 @@ export default function AdminContracts() {
                     <TableCell>{c.client_confirmed ? "✓" : "—"}</TableCell>
                     <TableCell className="text-muted-foreground text-sm">{new Date(c.created_at).toLocaleDateString()}</TableCell>
                     <TableCell className="text-muted-foreground text-sm">{c.completed_at ? new Date(c.completed_at).toLocaleDateString() : "—"}</TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        {(c.status === "proposed" || c.status === "disputed") && (
+                          <>
+                            <Button variant="ghost" size="icon" className="h-8 w-8" title="Approve" onClick={() => updateStatus(c.id, "accepted")}>
+                              <CheckCircle className="h-4 w-4 text-green-600" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8" title="Cancel" onClick={() => updateStatus(c.id, "cancelled")}>
+                              <XCircle className="h-4 w-4 text-yellow-600" />
+                            </Button>
+                          </>
+                        )}
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8" title="Delete">
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete Contract</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This will permanently delete "{c.title}". This action cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => handleDelete(c.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
