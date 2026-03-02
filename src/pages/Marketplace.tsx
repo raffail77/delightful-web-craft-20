@@ -36,13 +36,35 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
-import { Clock, MapPin, Wifi, Plus, Search, Filter, User, MessageCircle, Trash2, ExternalLink } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  Clock,
+  MapPin,
+  Wifi,
+  Plus,
+  Search,
+  Filter,
+  User,
+  MessageCircle,
+  Trash2,
+  Star,
+  ArrowRight,
+} from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 import MessagingDialog from "@/components/MessagingDialog";
 import ServiceDetailDialog from "@/components/marketplace/ServiceDetailDialog";
 
+type ServiceProfile = {
+  full_name: string | null;
+  avatar_url: string | null;
+  headline: string | null;
+};
+
 type Service = Database["public"]["Tables"]["services"]["Row"] & {
-  profiles?: { full_name: string | null } | null;
+  profiles?: ServiceProfile | null;
+  avgRating?: number;
+  reviewCount?: number;
 };
 type ServiceType = Database["public"]["Enums"]["service_type"];
 
@@ -92,11 +114,11 @@ const Marketplace = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleContactProvider = (
-    receiverId: string, 
-    receiverName: string, 
-    serviceId: string, 
+    receiverId: string,
+    receiverName: string,
+    serviceId: string,
     serviceTitle: string,
-    serviceType: "offer" | "request",
+    svcType: "offer" | "request",
     serviceOwnerId: string
   ) => {
     if (!user) {
@@ -105,16 +127,12 @@ const Marketplace = () => {
       return;
     }
     setMessagingReceiver({ id: receiverId, name: receiverName });
-    setMessagingService({ id: serviceId, title: serviceTitle, serviceType, serviceOwnerId });
+    setMessagingService({ id: serviceId, title: serviceTitle, serviceType: svcType, serviceOwnerId });
     setMessagingOpen(true);
   };
 
   const handleDeleteService = async (serviceId: string) => {
-    const { error } = await supabase
-      .from("services")
-      .delete()
-      .eq("id", serviceId);
-
+    const { error } = await supabase.from("services").delete().eq("id", serviceId);
     if (error) {
       toast({ title: "Error", description: "Failed to delete service", variant: "destructive" });
     } else {
@@ -124,19 +142,11 @@ const Marketplace = () => {
 
   useEffect(() => {
     fetchServices();
-
     const channel = supabase
       .channel("services-changes")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "services" },
-        () => fetchServices()
-      )
+      .on("postgres_changes", { event: "*", schema: "public", table: "services" }, () => fetchServices())
       .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => { supabase.removeChannel(channel); };
   }, []);
 
   const fetchServices = async () => {
@@ -151,19 +161,35 @@ const Marketplace = () => {
       return;
     }
 
-    // Fetch profiles for all unique user_ids
-    const userIds = [...new Set(servicesData?.map(s => s.user_id) || [])];
-    const { data: profilesData } = await supabase
-      .from("profiles")
-      .select("user_id, full_name")
-      .in("user_id", userIds);
+    const userIds = [...new Set(servicesData?.map((s) => s.user_id) || [])];
 
-    const profilesMap = new Map(profilesData?.map(p => [p.user_id, p]) || []);
-    
-    const servicesWithProfiles = servicesData?.map(service => ({
-      ...service,
-      profiles: profilesMap.get(service.user_id) || null
-    })) || [];
+    // Fetch profiles with avatar + headline, and reviews for ratings
+    const [{ data: profilesData }, { data: reviewsData }] = await Promise.all([
+      supabase.from("profiles").select("user_id, full_name, avatar_url, headline").in("user_id", userIds),
+      supabase.from("reviews").select("reviewee_id, rating"),
+    ]);
+
+    const profilesMap = new Map(profilesData?.map((p) => [p.user_id, p]) || []);
+
+    // Build rating map per user
+    const ratingMap = new Map<string, { sum: number; count: number }>();
+    reviewsData?.forEach((r: any) => {
+      const existing = ratingMap.get(r.reviewee_id) || { sum: 0, count: 0 };
+      existing.sum += r.rating;
+      existing.count += 1;
+      ratingMap.set(r.reviewee_id, existing);
+    });
+
+    const servicesWithProfiles =
+      servicesData?.map((service) => {
+        const rating = ratingMap.get(service.user_id);
+        return {
+          ...service,
+          profiles: profilesMap.get(service.user_id) || null,
+          avgRating: rating ? rating.sum / rating.count : 0,
+          reviewCount: rating?.count || 0,
+        };
+      }) || [];
 
     setServices(servicesWithProfiles);
     setLoading(false);
@@ -175,7 +201,6 @@ const Marketplace = () => {
       toast({ title: "Please sign in", description: "You need to be logged in to create a service", variant: "destructive" });
       return;
     }
-
     setIsSubmitting(true);
     const { error } = await supabase.from("services").insert({
       user_id: user.id,
@@ -187,9 +212,7 @@ const Marketplace = () => {
       location: location || null,
       is_remote: isRemote,
     });
-
     setIsSubmitting(false);
-
     if (error) {
       toast({ title: "Error", description: "Failed to create service", variant: "destructive" });
     } else {
@@ -218,7 +241,6 @@ const Marketplace = () => {
       activeTab === "all" ||
       (activeTab === "offers" && service.service_type === "offer") ||
       (activeTab === "requests" && service.service_type === "request");
-
     return matchesSearch && matchesCategory && matchesType;
   });
 
@@ -228,12 +250,49 @@ const Marketplace = () => {
 
       <main className="pt-24 pb-16">
         <div className="container mx-auto px-4">
-          {/* Header */}
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
-            <div>
-              <h1 className="text-3xl md:text-4xl font-serif font-bold">Services Marketplace</h1>
-              <p className="text-muted-foreground mt-1">Find skills to learn or share your expertise</p>
+          {/* Hero-style Header */}
+          <div className="rounded-2xl bg-gradient-navy p-8 md:p-12 mb-8 text-primary-foreground">
+            <h1 className="text-3xl md:text-4xl font-serif font-bold mb-2">
+              Find the perfect <span className="text-gradient-gold">freelance</span> services
+            </h1>
+            <p className="text-primary-foreground/70 mb-6 max-w-xl">
+              Discover skilled professionals ready to bring your projects to life. Trade expertise with time credits.
+            </p>
+
+            {/* Search bar */}
+            <div className="flex flex-col sm:flex-row gap-3 max-w-2xl">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                <Input
+                  placeholder="Search services..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 bg-background text-foreground h-12"
+                />
+              </div>
+              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                <SelectTrigger className="w-full sm:w-[180px] bg-background text-foreground h-12">
+                  <SelectValue placeholder="All Categories" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Categories</SelectItem>
+                  {CATEGORIES.map((cat) => (
+                    <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
+          </div>
+
+          {/* Toolbar */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
+              <TabsList>
+                <TabsTrigger value="all">All Services</TabsTrigger>
+                <TabsTrigger value="offers">Offers</TabsTrigger>
+                <TabsTrigger value="requests">Requests</TabsTrigger>
+              </TabsList>
+            </Tabs>
 
             <Dialog open={dialogOpen} onOpenChange={(open) => {
               if (open && !user) {
@@ -258,9 +317,7 @@ const Marketplace = () => {
                     <div className="space-y-2">
                       <Label>Service Type</Label>
                       <Select value={serviceType} onValueChange={(v) => setServiceType(v as ServiceType)}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="offer">I'm Offering</SelectItem>
                           <SelectItem value="request">I'm Requesting</SelectItem>
@@ -270,9 +327,7 @@ const Marketplace = () => {
                     <div className="space-y-2">
                       <Label>Category</Label>
                       <Select value={category} onValueChange={setCategory}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select category" />
-                        </SelectTrigger>
+                        <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
                         <SelectContent>
                           {CATEGORIES.map((cat) => (
                             <SelectItem key={cat} value={cat}>{cat}</SelectItem>
@@ -281,53 +336,24 @@ const Marketplace = () => {
                       </Select>
                     </div>
                   </div>
-
                   <div className="space-y-2">
                     <Label htmlFor="title">Title</Label>
-                    <Input
-                      id="title"
-                      value={title}
-                      onChange={(e) => setTitle(e.target.value)}
-                      placeholder="e.g., Python Programming Lessons"
-                      required
-                    />
+                    <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g., Python Programming Lessons" required />
                   </div>
-
                   <div className="space-y-2">
                     <Label htmlFor="description">Description</Label>
-                    <Textarea
-                      id="description"
-                      value={description}
-                      onChange={(e) => setDescription(e.target.value)}
-                      placeholder="Describe your service in detail..."
-                      rows={4}
-                      required
-                    />
+                    <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Describe your service in detail..." rows={4} required />
                   </div>
-
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="credits">Time Credits / Hour</Label>
-                      <Input
-                        id="credits"
-                        type="number"
-                        min={1}
-                        max={10}
-                        value={hourlyCredits}
-                        onChange={(e) => setHourlyCredits(parseInt(e.target.value) || 1)}
-                      />
+                      <Input id="credits" type="number" min={1} max={10} value={hourlyCredits} onChange={(e) => setHourlyCredits(parseInt(e.target.value) || 1)} />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="location">Location (optional)</Label>
-                      <Input
-                        id="location"
-                        value={location}
-                        onChange={(e) => setLocation(e.target.value)}
-                        placeholder="City, State"
-                      />
+                      <Input id="location" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="City, State" />
                     </div>
                   </div>
-
                   <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
                     <div className="flex items-center gap-2">
                       <Wifi className="w-5 h-5 text-muted-foreground" />
@@ -335,7 +361,6 @@ const Marketplace = () => {
                     </div>
                     <Switch checked={isRemote} onCheckedChange={setIsRemote} />
                   </div>
-
                   <Button type="submit" variant="gold" className="w-full" disabled={isSubmitting || !category}>
                     {isSubmitting ? "Posting..." : "Post Service"}
                   </Button>
@@ -344,51 +369,41 @@ const Marketplace = () => {
             </Dialog>
           </div>
 
-          {/* Filters */}
-          <div className="flex flex-col md:flex-row gap-4 mb-6">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-              <Input
-                placeholder="Search services..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            <div className="flex items-center gap-2">
-              <Filter className="w-5 h-5 text-muted-foreground" />
-              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="All Categories" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Categories</SelectItem>
-                  {CATEGORIES.map((cat) => (
-                    <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          {/* Category pills */}
+          <div className="flex flex-wrap gap-2 mb-8">
+            <Badge
+              variant={selectedCategory === "all" ? "default" : "outline"}
+              className="cursor-pointer px-4 py-1.5 text-sm"
+              onClick={() => setSelectedCategory("all")}
+            >
+              All
+            </Badge>
+            {CATEGORIES.map((cat) => (
+              <Badge
+                key={cat}
+                variant={selectedCategory === cat ? "default" : "outline"}
+                className="cursor-pointer px-4 py-1.5 text-sm"
+                onClick={() => setSelectedCategory(cat)}
+              >
+                {cat}
+              </Badge>
+            ))}
           </div>
 
-          {/* Tabs */}
-          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "all" | "offers" | "requests")} className="mb-6">
-            <TabsList>
-              <TabsTrigger value="all">All Services</TabsTrigger>
-              <TabsTrigger value="offers">Offers</TabsTrigger>
-              <TabsTrigger value="requests">Requests</TabsTrigger>
-            </TabsList>
-          </Tabs>
-
-          {/* Services Grid */}
+          {/* Services Grid - Fiverr-style cards */}
           {loading ? (
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[...Array(6)].map((_, i) => (
-                <div key={i} className="glass-card p-6 rounded-xl animate-pulse">
-                  <div className="h-4 bg-muted rounded w-1/4 mb-3" />
-                  <div className="h-6 bg-muted rounded w-3/4 mb-2" />
-                  <div className="h-16 bg-muted rounded mb-4" />
-                  <div className="h-4 bg-muted rounded w-1/2" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+              {[...Array(8)].map((_, i) => (
+                <div key={i} className="rounded-xl border border-border overflow-hidden animate-pulse">
+                  <div className="h-40 bg-muted" />
+                  <div className="p-4 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-full bg-muted" />
+                      <div className="h-3 bg-muted rounded w-24" />
+                    </div>
+                    <div className="h-4 bg-muted rounded w-3/4" />
+                    <div className="h-3 bg-muted rounded w-1/2" />
+                  </div>
                 </div>
               ))}
             </div>
@@ -398,11 +413,11 @@ const Marketplace = () => {
               <p className="text-sm text-muted-foreground mt-1">Try adjusting your filters or post the first one!</p>
             </div>
           ) : (
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
               {filteredServices.map((service) => (
-                <ServiceCard 
-                  key={service.id} 
-                  service={service} 
+                <ServiceCard
+                  key={service.id}
+                  service={service}
                   currentUserId={user?.id}
                   onContact={handleContactProvider}
                   onDelete={handleDeleteService}
@@ -450,140 +465,144 @@ const Marketplace = () => {
   );
 };
 
-const ServiceCard = ({ service, currentUserId, onContact, onDelete, onDetail }: { 
-  service: Service; 
+/* ───────── Fiverr-style Service Card ───────── */
+
+const ServiceCard = ({
+  service,
+  currentUserId,
+  onContact,
+  onDelete,
+  onDetail,
+}: {
+  service: Service;
   currentUserId?: string;
-  onContact: (
-    receiverId: string, 
-    receiverName: string, 
-    serviceId: string, 
-    serviceTitle: string,
-    serviceType: "offer" | "request",
-    serviceOwnerId: string
-  ) => void;
+  onContact: (receiverId: string, receiverName: string, serviceId: string, serviceTitle: string, serviceType: "offer" | "request", serviceOwnerId: string) => void;
   onDelete: (serviceId: string) => void;
   onDetail: (service: Service) => void;
 }) => {
-  const showContactButton = currentUserId && service.user_id !== currentUserId;
   const isOwner = currentUserId === service.user_id;
+  const showContactButton = currentUserId && !isOwner;
   const contactLabel = service.service_type === "offer" ? "Contact Provider" : "Contact Receiver";
-  
+  const initials = service.profiles?.full_name
+    ? service.profiles.full_name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
+    : "U";
+
   return (
-    <div 
-      className="glass-card p-6 rounded-xl hover:shadow-lg transition-all group relative cursor-pointer"
+    <div
+      className="group rounded-xl border border-border bg-card overflow-hidden hover-lift cursor-pointer"
       onClick={() => onDetail(service)}
     >
-      <div className="flex items-center justify-between mb-3">
-        <span
-          className={`px-3 py-1 text-xs font-medium rounded-full ${
+      {/* Color header strip based on category */}
+      <div className="relative h-36 bg-gradient-navy flex items-end p-4">
+        <Badge
+          className={`absolute top-3 left-3 text-xs ${
             service.service_type === "offer"
-              ? "bg-green-500/20 text-green-400"
-              : "bg-blue-500/20 text-blue-400"
+              ? "bg-emerald-500/90 text-white hover:bg-emerald-500"
+              : "bg-sky-500/90 text-white hover:bg-sky-500"
           }`}
         >
           {service.service_type === "offer" ? "Offering" : "Requesting"}
-        </span>
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-muted-foreground">{service.category}</span>
-          {isOwner && (
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-6 w-6 text-muted-foreground hover:text-destructive"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Delete Service</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Are you sure you want to delete "{service.title}"? This action cannot be undone.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={() => onDelete(service.id)}
-                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                  >
-                    Delete
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          )}
-        </div>
+        </Badge>
+
+        {isOwner && (
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute top-3 right-3 h-7 w-7 text-white/70 hover:text-destructive hover:bg-white/10"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete Service</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Are you sure you want to delete "{service.title}"? This action cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={() => onDelete(service.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        )}
+
+        <h3 className="text-white font-semibold text-sm leading-snug line-clamp-2 drop-shadow-md">
+          {service.title}
+        </h3>
       </div>
 
-      <h3 className="text-lg font-semibold mb-2 group-hover:text-gold transition-colors line-clamp-2">
-        {service.title}
-      </h3>
-
-      <p className="text-sm text-muted-foreground mb-4 line-clamp-3">{service.description}</p>
-
-      {service.profiles?.full_name && (
-        <div className="flex items-center justify-between mb-4 text-sm text-muted-foreground">
-          <div className="flex items-center gap-2">
-            <User className="w-4 h-4" />
-            <span>Posted by {service.profiles.full_name}</span>
+      {/* Card body */}
+      <div className="p-4 space-y-3">
+        {/* Freelancer row */}
+        <div className="flex items-center gap-2.5">
+          <Avatar className="h-8 w-8 border border-border">
+            <AvatarImage src={service.profiles?.avatar_url || undefined} />
+            <AvatarFallback className="text-xs bg-muted">{initials}</AvatarFallback>
+          </Avatar>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-medium truncate">{service.profiles?.full_name || "Anonymous"}</p>
+            {service.profiles?.headline && (
+              <p className="text-xs text-muted-foreground truncate">{service.profiles.headline}</p>
+            )}
           </div>
-          {/* Show profile link only for offering services - privacy is enforced at profile page level */}
-          {service.service_type === "offer" && (
-            <a
-              href={`/profile/${service.user_id}`}
-              className="flex items-center gap-1 text-primary hover:text-gold transition-colors text-xs"
-              onClick={(e) => e.stopPropagation()}
-            >
-              View Profile
-              <ExternalLink className="w-3 h-3" />
-            </a>
-          )}
         </div>
-      )}
 
-      <div className="flex items-center justify-between pt-4 border-t border-border">
-        <div className="flex items-center gap-1 text-gold font-semibold">
-          <Clock className="w-4 h-4" />
-          {service.hourly_credits} credit{service.hourly_credits !== 1 ? "s" : ""}/hr
-        </div>
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          {service.is_remote && (
-            <span className="flex items-center gap-1">
-              <Wifi className="w-3 h-3" />
-              Remote
+        {/* Rating + Category */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1">
+            <Star className="w-3.5 h-3.5 text-gold fill-gold" />
+            <span className="text-sm font-semibold">
+              {service.avgRating ? service.avgRating.toFixed(1) : "New"}
             </span>
-          )}
-          {service.location && (
-            <span className="flex items-center gap-1">
-              <MapPin className="w-3 h-3" />
-              {service.location}
-            </span>
-          )}
+            {(service.reviewCount ?? 0) > 0 && (
+              <span className="text-xs text-muted-foreground">({service.reviewCount})</span>
+            )}
+          </div>
+          <Badge variant="outline" className="text-[10px] px-2 py-0.5">{service.category}</Badge>
         </div>
+
+        {/* Meta: credits + location */}
+        <div className="flex items-center justify-between pt-2 border-t border-border">
+          <div className="flex items-center gap-1 text-muted-foreground text-xs">
+            {service.is_remote && (
+              <span className="flex items-center gap-0.5">
+                <Wifi className="w-3 h-3" /> Remote
+              </span>
+            )}
+            {service.location && (
+              <span className="flex items-center gap-0.5 ml-2">
+                <MapPin className="w-3 h-3" /> {service.location}
+              </span>
+            )}
+          </div>
+          <span className="text-sm font-bold text-gold flex items-center gap-1">
+            <Clock className="w-3.5 h-3.5" />
+            {service.hourly_credits} cr/hr
+          </span>
+        </div>
+
+        {showContactButton && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full gap-2 mt-1"
+            onClick={(e) => {
+              e.stopPropagation();
+              onContact(service.user_id, service.profiles?.full_name || "User", service.id, service.title, service.service_type, service.user_id);
+            }}
+          >
+            <MessageCircle className="w-4 h-4" />
+            {contactLabel}
+          </Button>
+        )}
       </div>
-
-      {showContactButton && (
-        <Button
-          variant="outline"
-          size="sm"
-          className="w-full mt-4 gap-2"
-          onClick={(e) => { e.stopPropagation(); onContact(
-            service.user_id,
-            service.profiles?.full_name || "User",
-            service.id,
-            service.title,
-            service.service_type,
-            service.user_id
-          ); }}
-        >
-          <MessageCircle className="w-4 h-4" />
-          {contactLabel}
-        </Button>
-      )}
     </div>
   );
 };
