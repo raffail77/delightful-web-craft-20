@@ -7,6 +7,7 @@ import {
   MessageSquare,
   LayoutDashboard,
   Shield,
+  Settings,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -30,6 +31,7 @@ const menuItems = [
   { title: "Transactions", url: "/admin/transactions", icon: CreditCard },
   { title: "Reviews", url: "/admin/reviews", icon: Star },
   { title: "Chatbot Logs", url: "/admin/chatbot", icon: MessageSquare },
+  { title: "Settings", url: "/admin/settings", icon: Settings },
 ];
 
 export function AdminSidebar() {

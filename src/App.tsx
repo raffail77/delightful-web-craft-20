@@ -27,6 +27,8 @@ import Status from "./pages/Status";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
 import CookiePolicy from "./pages/CookiePolicy";
+import BuyCredits from "./pages/BuyCredits";
+import Wallet from "./pages/Wallet";
 import AdminLayout from "./components/admin/AdminLayout";
 import AdminOverview from "./pages/admin/AdminOverview";
 import AdminUsers from "./pages/admin/AdminUsers";
@@ -35,6 +37,7 @@ import AdminContracts from "./pages/admin/AdminContracts";
 import AdminTransactions from "./pages/admin/AdminTransactions";
 import AdminReviews from "./pages/admin/AdminReviews";
 import AdminChatbot from "./pages/admin/AdminChatbot";
+import AdminSettings from "./pages/admin/AdminSettings";
 
 const queryClient = new QueryClient();
 
@@ -56,6 +59,8 @@ const App = () => (
             <Route path="/transactions" element={<Transactions />} />
             <Route path="/contracts" element={<Contracts />} />
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/buy-credits" element={<BuyCredits />} />
+            <Route path="/wallet" element={<Wallet />} />
             <Route path="/pricing" element={<Pricing />} />
             <Route path="/about" element={<About />} />
             <Route path="/careers" element={<Careers />} />
@@ -77,6 +82,7 @@ const App = () => (
               <Route path="transactions" element={<AdminTransactions />} />
               <Route path="reviews" element={<AdminReviews />} />
               <Route path="chatbot" element={<AdminChatbot />} />
+              <Route path="settings" element={<AdminSettings />} />
             </Route>
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
