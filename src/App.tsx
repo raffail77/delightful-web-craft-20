@@ -27,6 +27,8 @@ import Status from "./pages/Status";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
 import CookiePolicy from "./pages/CookiePolicy";
+import BuyCredits from "./pages/BuyCredits";
+import Wallet from "./pages/Wallet";
 import AdminLayout from "./components/admin/AdminLayout";
 import AdminOverview from "./pages/admin/AdminOverview";
 import AdminUsers from "./pages/admin/AdminUsers";
@@ -35,6 +37,7 @@ import AdminContracts from "./pages/admin/AdminContracts";
 import AdminTransactions from "./pages/admin/AdminTransactions";
 import AdminReviews from "./pages/admin/AdminReviews";
 import AdminChatbot from "./pages/admin/AdminChatbot";
+import AdminSettings from "./pages/admin/AdminSettings";
 
 const queryClient = new QueryClient();
 
