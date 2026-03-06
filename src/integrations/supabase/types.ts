@@ -119,6 +119,89 @@ export type Database = {
           },
         ]
       }
+      credit_packages: {
+        Row: {
+          created_at: string | null
+          credits: number
+          id: string
+          is_active: boolean | null
+          name: string
+          price_usd: number
+          sort_order: number | null
+          stripe_price_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          credits: number
+          id?: string
+          is_active?: boolean | null
+          name: string
+          price_usd: number
+          sort_order?: number | null
+          stripe_price_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          credits?: number
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          price_usd?: number
+          sort_order?: number | null
+          stripe_price_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      credit_purchases: {
+        Row: {
+          amount_usd: number
+          completed_at: string | null
+          created_at: string | null
+          credits: number
+          id: string
+          package_id: string | null
+          status: string
+          stripe_payment_intent_id: string | null
+          stripe_session_id: string | null
+          user_id: string
+        }
+        Insert: {
+          amount_usd: number
+          completed_at?: string | null
+          created_at?: string | null
+          credits: number
+          id?: string
+          package_id?: string | null
+          status?: string
+          stripe_payment_intent_id?: string | null
+          stripe_session_id?: string | null
+          user_id: string
+        }
+        Update: {
+          amount_usd?: number
+          completed_at?: string | null
+          created_at?: string | null
+          credits?: number
+          id?: string
+          package_id?: string | null
+          status?: string
+          stripe_payment_intent_id?: string | null
+          stripe_session_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credit_purchases_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "credit_packages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       education: {
         Row: {
           created_at: string | null
@@ -249,6 +332,30 @@ export type Database = {
           },
         ]
       }
+      platform_settings: {
+        Row: {
+          id: string
+          key: string
+          updated_at: string | null
+          updated_by: string | null
+          value: Json
+        }
+        Insert: {
+          id?: string
+          key: string
+          updated_at?: string | null
+          updated_by?: string | null
+          value: Json
+        }
+        Update: {
+          id?: string
+          key?: string
+          updated_at?: string | null
+          updated_by?: string | null
+          value?: Json
+        }
+        Relationships: []
+      }
       portfolio_items: {
         Row: {
           created_at: string | null
@@ -294,9 +401,12 @@ export type Database = {
           availability_status: string | null
           avatar_url: string | null
           bio: string | null
+          bonus_credits: number
           cover_url: string | null
           created_at: string
+          earned_credits: number
           email: string | null
+          escrow_credits: number
           full_name: string | null
           headline: string | null
           id: string
@@ -318,9 +428,12 @@ export type Database = {
           availability_status?: string | null
           avatar_url?: string | null
           bio?: string | null
+          bonus_credits?: number
           cover_url?: string | null
           created_at?: string
+          earned_credits?: number
           email?: string | null
+          escrow_credits?: number
           full_name?: string | null
           headline?: string | null
           id?: string
@@ -342,9 +455,12 @@ export type Database = {
           availability_status?: string | null
           avatar_url?: string | null
           bio?: string | null
+          bonus_credits?: number
           cover_url?: string | null
           created_at?: string
+          earned_credits?: number
           email?: string | null
+          escrow_credits?: number
           full_name?: string | null
           headline?: string | null
           id?: string
@@ -651,6 +767,45 @@ export type Database = {
           id?: string
           proficiency_level?: number | null
           tool_name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      withdrawal_requests: {
+        Row: {
+          created_at: string | null
+          credits_amount: number
+          fee_amount: number
+          id: string
+          net_amount: number
+          notes: string | null
+          processed_at: string | null
+          status: string
+          usd_amount: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          credits_amount: number
+          fee_amount?: number
+          id?: string
+          net_amount: number
+          notes?: string | null
+          processed_at?: string | null
+          status?: string
+          usd_amount: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          credits_amount?: number
+          fee_amount?: number
+          id?: string
+          net_amount?: number
+          notes?: string | null
+          processed_at?: string | null
+          status?: string
+          usd_amount?: number
           user_id?: string
         }
         Relationships: []
