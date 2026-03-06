@@ -132,6 +132,10 @@ const Navbar = () => {
                       <History className="w-4 h-4 mr-2" />
                       Transactions
                     </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate("/wallet")}>
+                      <Coins className="w-4 h-4 mr-2" />
+                      Wallet
+                    </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => navigate("/contracts")}>
                       <FileText className="w-4 h-4 mr-2" />
                       Contracts
