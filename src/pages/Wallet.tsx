@@ -302,6 +302,47 @@ export default function Wallet() {
             </Card>
           </div>
 
+          {/* Stripe Connect Status */}
+          <Card className="mb-8">
+            <CardContent className="py-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Link2 className="w-5 h-5 text-secondary" />
+                <div>
+                  <p className="font-medium text-sm">Stripe Payout Account</p>
+                  <p className="text-xs text-muted-foreground">
+                    {!connectStatus || !connectStatus.connected
+                      ? "Connect your bank account to receive withdrawal payouts"
+                      : connectStatus.onboarding_complete
+                        ? "Your payout account is connected and ready"
+                        : "Onboarding started — complete setup to receive payouts"}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                {connectStatus?.onboarding_complete ? (
+                  <Badge className="bg-green-500/10 text-green-700 flex items-center gap-1">
+                    <CheckCircle2 className="w-3 h-3" /> Connected
+                  </Badge>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant="gold"
+                    onClick={handleConnectStripe}
+                    disabled={connectLoading}
+                  >
+                    {connectLoading ? (
+                      <><Loader2 className="w-4 h-4 mr-1 animate-spin" /> Connecting...</>
+                    ) : connectStatus?.connected ? (
+                      "Complete Setup"
+                    ) : (
+                      "Connect Stripe"
+                    )}
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Tabs */}
           <Tabs defaultValue="transactions" className="space-y-4">
             <TabsList>
