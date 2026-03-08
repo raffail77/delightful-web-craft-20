@@ -66,6 +66,8 @@ export default function Wallet() {
   const [withdrawOpen, setWithdrawOpen] = useState(false);
   const [withdrawAmount, setWithdrawAmount] = useState("");
   const [withdrawing, setWithdrawing] = useState(false);
+  const [connectStatus, setConnectStatus] = useState<{ connected: boolean; onboarding_complete: boolean; payouts_enabled?: boolean } | null>(null);
+  const [connectLoading, setConnectLoading] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) navigate("/auth");
