@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/dialog";
 import {
   Wallet as WalletIcon, ArrowUpRight, ArrowDownLeft, Clock, ShoppingCart,
-  Banknote, AlertCircle, TrendingUp, CreditCard, Coins,
+  Banknote, AlertCircle, TrendingUp, CreditCard, Coins, Link2, CheckCircle2, Loader2,
 } from "lucide-react";
 
 interface Purchase {
