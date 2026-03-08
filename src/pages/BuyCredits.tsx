@@ -60,12 +60,32 @@ export default function BuyCredits() {
       if (error) throw error;
       if (data?.url) {
         window.open(data.url, "_blank");
+        toast({ title: "Checkout opened", description: "Complete payment in the new tab, then return here." });
+        // Poll for payment completion every 5 seconds for up to 5 minutes
+        let attempts = 0;
+        const maxAttempts = 60;
+        const pollInterval = setInterval(async () => {
+          attempts++;
+          try {
+            const { data: verifyData } = await supabase.functions.invoke("verify-payment");
+            if (verifyData?.credits_added > 0) {
+              clearInterval(pollInterval);
+              setPurchasing(null);
+              toast({ title: "Payment Successful!", description: `${verifyData.credits_added} credits added to your wallet.` });
+              navigate("/wallet");
+              return;
+            }
+          } catch {}
+          if (attempts >= maxAttempts) {
+            clearInterval(pollInterval);
+            setPurchasing(null);
+          }
+        }, 5000);
       } else {
         throw new Error("No checkout URL returned");
       }
     } catch (err: any) {
       toast({ title: "Error", description: err.message || "Could not start checkout", variant: "destructive" });
-    } finally {
       setPurchasing(null);
     }
   };
