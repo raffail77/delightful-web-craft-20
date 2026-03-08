@@ -1,5 +1,5 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import Stripe from "https://esm.sh/stripe@14.21.0?target=deno";
+import { createClient } from "npm:@supabase/supabase-js@2.57.2";
+import Stripe from "https://esm.sh/stripe@18.5.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -16,13 +16,12 @@ Deno.serve(async (req) => {
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     if (!stripeKey) throw new Error("STRIPE_SECRET_KEY not configured");
 
-    const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
+    const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
     const body = await req.text();
     const sig = req.headers.get("stripe-signature");
 
     let event: Stripe.Event;
 
-    // If webhook secret is configured, verify signature
     const webhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET");
     if (webhookSecret && sig) {
       try {
@@ -34,7 +33,6 @@ Deno.serve(async (req) => {
         });
       }
     } else {
-      // For test mode without webhook secret
       event = JSON.parse(body);
     }
 
@@ -58,7 +56,6 @@ Deno.serve(async (req) => {
 
       console.log(`Processing payment: user=${userId}, credits=${credits}, purchase=${purchaseId}`);
 
-      // Update purchase record
       if (purchaseId) {
         await adminClient
           .from("credit_purchases")
@@ -70,16 +67,6 @@ Deno.serve(async (req) => {
           .eq("id", purchaseId);
       }
 
-      // Add credits to user's wallet
-      await adminClient
-        .from("profiles")
-        .update({
-          time_credits: adminClient.rpc ? undefined : undefined,
-        })
-        .eq("user_id", userId);
-
-      // Use raw SQL via RPC to atomically add credits
-      // Since we can't do atomic increment easily, use a simple update approach
       const { data: profile } = await adminClient
         .from("profiles")
         .select("time_credits")
@@ -96,7 +83,6 @@ Deno.serve(async (req) => {
           .eq("user_id", userId);
       }
 
-      // Record as a transaction
       await adminClient.from("transactions").insert({
         sender_id: userId,
         receiver_id: userId,

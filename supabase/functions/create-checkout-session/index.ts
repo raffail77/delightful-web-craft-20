@@ -1,5 +1,5 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import Stripe from "https://esm.sh/stripe@14.21.0?target=deno";
+import { createClient } from "npm:@supabase/supabase-js@2.57.2";
+import Stripe from "https://esm.sh/stripe@18.5.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -62,19 +62,13 @@ Deno.serve(async (req) => {
       });
     }
 
-    const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
+    const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
 
     // Find or create Stripe customer
     const customers = await stripe.customers.list({ email: userEmail, limit: 1 });
-    let customerId: string;
+    let customerId: string | undefined;
     if (customers.data.length > 0) {
       customerId = customers.data[0].id;
-    } else {
-      const customer = await stripe.customers.create({
-        email: userEmail,
-        metadata: { supabase_user_id: userId },
-      });
-      customerId = customer.id;
     }
 
     // Create purchase record
@@ -96,6 +90,7 @@ Deno.serve(async (req) => {
     // Create checkout session
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
+      customer_email: customerId ? undefined : userEmail,
       line_items: [
         {
           price_data: {
