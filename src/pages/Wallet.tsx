@@ -107,6 +107,19 @@ export default function Wallet() {
     };
   }, [user]);
 
+  // Re-fetch connect status when user returns to this tab (e.g. after Stripe onboarding)
+  useEffect(() => {
+    if (!user) return;
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        fetchConnectStatus();
+        refreshCredits();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
+  }, [user]);
+
   // Verify payment on success redirect
   // Auto-verify any pending purchases on every wallet load
   useEffect(() => {
