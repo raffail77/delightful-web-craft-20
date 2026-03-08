@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/dialog";
 import {
   Wallet as WalletIcon, ArrowUpRight, ArrowDownLeft, Clock, ShoppingCart,
-  Banknote, AlertCircle, TrendingUp, CreditCard, Coins,
+  Banknote, AlertCircle, TrendingUp, CreditCard, Coins, Link2, CheckCircle2, Loader2,
 } from "lucide-react";
 
 interface Purchase {
@@ -66,6 +66,8 @@ export default function Wallet() {
   const [withdrawOpen, setWithdrawOpen] = useState(false);
   const [withdrawAmount, setWithdrawAmount] = useState("");
   const [withdrawing, setWithdrawing] = useState(false);
+  const [connectStatus, setConnectStatus] = useState<{ connected: boolean; onboarding_complete: boolean; payouts_enabled?: boolean } | null>(null);
+  const [connectLoading, setConnectLoading] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) navigate("/auth");
@@ -74,6 +76,7 @@ export default function Wallet() {
   useEffect(() => {
     if (!user) return;
     fetchAll();
+    fetchConnectStatus();
 
     // Subscribe to profile changes for realtime balance updates
     const channel = supabase
@@ -127,7 +130,8 @@ export default function Wallet() {
     verifyPending();
 
     const params = new URLSearchParams(window.location.search);
-    if (params.get("payment") === "success") {
+    if (params.get("payment") === "success" || params.get("connect")) {
+      if (params.get("connect") === "complete") fetchConnectStatus();
       window.history.replaceState({}, "", "/wallet");
     }
   }, [user]);
@@ -153,6 +157,30 @@ export default function Wallet() {
     (settingsRes.data || []).forEach((r: any) => { s[r.key] = JSON.parse(r.value); });
     setSettings(s);
     setLoading(false);
+  };
+
+  const fetchConnectStatus = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke("stripe-connect-status");
+      if (!error && data) setConnectStatus(data);
+    } catch (err) {
+      console.error("Connect status error:", err);
+    }
+  };
+
+  const handleConnectStripe = async () => {
+    setConnectLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("stripe-connect-onboard");
+      if (error) throw error;
+      if (data?.url) {
+        window.open(data.url, "_blank");
+      }
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message || "Failed to start onboarding", variant: "destructive" });
+    } finally {
+      setConnectLoading(false);
+    }
   };
 
   const handleWithdraw = async () => {
@@ -274,6 +302,47 @@ export default function Wallet() {
               </CardContent>
             </Card>
           </div>
+
+          {/* Stripe Connect Status */}
+          <Card className="mb-8">
+            <CardContent className="py-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Link2 className="w-5 h-5 text-secondary" />
+                <div>
+                  <p className="font-medium text-sm">Stripe Payout Account</p>
+                  <p className="text-xs text-muted-foreground">
+                    {!connectStatus || !connectStatus.connected
+                      ? "Connect your bank account to receive withdrawal payouts"
+                      : connectStatus.onboarding_complete
+                        ? "Your payout account is connected and ready"
+                        : "Onboarding started — complete setup to receive payouts"}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                {connectStatus?.onboarding_complete ? (
+                  <Badge className="bg-green-500/10 text-green-700 flex items-center gap-1">
+                    <CheckCircle2 className="w-3 h-3" /> Connected
+                  </Badge>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant="gold"
+                    onClick={handleConnectStripe}
+                    disabled={connectLoading}
+                  >
+                    {connectLoading ? (
+                      <><Loader2 className="w-4 h-4 mr-1 animate-spin" /> Connecting...</>
+                    ) : connectStatus?.connected ? (
+                      "Complete Setup"
+                    ) : (
+                      "Connect Stripe"
+                    )}
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Tabs */}
           <Tabs defaultValue="transactions" className="space-y-4">
@@ -440,6 +509,12 @@ export default function Wallet() {
           </DialogHeader>
 
           <div className="space-y-4 py-2">
+            {(!connectStatus?.onboarding_complete) && (
+              <div className="flex items-start gap-2 text-sm text-destructive bg-destructive/5 rounded-md p-3">
+                <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+                <span>You must <button className="underline font-medium" onClick={handleConnectStripe}>connect a Stripe account</button> before you can withdraw funds.</span>
+              </div>
+            )}
             <div className="text-sm text-muted-foreground">
               Eligible credits: <span className="font-semibold text-foreground">{earnedCredits}</span>
               <br />
@@ -485,7 +560,7 @@ export default function Wallet() {
             <Button
               variant="gold"
               onClick={handleWithdraw}
-              disabled={withdrawing || earnedCredits === 0 || !withdrawAmount}
+              disabled={withdrawing || earnedCredits === 0 || !withdrawAmount || !connectStatus?.onboarding_complete}
             >
               {withdrawing ? "Processing..." : "Request Withdrawal"}
             </Button>

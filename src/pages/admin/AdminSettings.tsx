@@ -84,41 +84,37 @@ export default function AdminSettings() {
   };
 
   const handleWithdrawalAction = async (id: string, action: "completed" | "rejected") => {
-    // Find the withdrawal to get details
     const withdrawal = withdrawals.find(w => w.id === id);
     if (!withdrawal) return;
 
-    const { error } = await supabase
-      .from("withdrawal_requests")
-      .update({ status: action, processed_at: new Date().toISOString() })
-      .eq("id", id);
-
-    if (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
-      return;
-    }
-
-    // If approved, deduct credits from user's profile
     if (action === "completed") {
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("time_credits, earned_credits")
-        .eq("user_id", withdrawal.user_id)
-        .single();
+      // Use the automated payout edge function
+      const { data, error } = await supabase.functions.invoke("process-payout", {
+        body: { withdrawal_id: id },
+      });
 
-      if (profile) {
-        await supabase
-          .from("profiles")
-          .update({
-            time_credits: profile.time_credits - withdrawal.credits_amount,
-            earned_credits: profile.earned_credits - withdrawal.credits_amount,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("user_id", withdrawal.user_id);
+      if (error || data?.error) {
+        const errMsg = data?.error || error?.message || "Payout failed";
+        toast({ title: "Payout Error", description: errMsg, variant: "destructive" });
+        fetchAll();
+        return;
       }
+
+      toast({ title: "Withdrawal Approved", description: `Payout sent via Stripe (${data.transfer_id})` });
+    } else {
+      // Reject - just update status
+      const { error } = await supabase
+        .from("withdrawal_requests")
+        .update({ status: "rejected", processed_at: new Date().toISOString() })
+        .eq("id", id);
+
+      if (error) {
+        toast({ title: "Error", description: error.message, variant: "destructive" });
+        return;
+      }
+      toast({ title: "Withdrawal Rejected" });
     }
 
-    toast({ title: `Withdrawal ${action}` });
     fetchAll();
   };
 
