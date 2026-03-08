@@ -559,7 +559,7 @@ export default function Wallet() {
             <Button
               variant="gold"
               onClick={handleWithdraw}
-              disabled={withdrawing || earnedCredits === 0 || !withdrawAmount}
+              disabled={withdrawing || earnedCredits === 0 || !withdrawAmount || !connectStatus?.onboarding_complete}
             >
               {withdrawing ? "Processing..." : "Request Withdrawal"}
             </Button>
