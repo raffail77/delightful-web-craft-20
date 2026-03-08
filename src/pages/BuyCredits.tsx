@@ -59,8 +59,16 @@ export default function BuyCredits() {
       });
       if (error) throw error;
       if (data?.url) {
-        window.location.href = data.url;
-      } else {
+        // Use top-level navigation to escape iframe, fallback to new tab
+        try {
+          if (window.top && window.top !== window) {
+            window.top.location.href = data.url;
+          } else {
+            window.location.href = data.url;
+          }
+        } catch {
+          window.open(data.url, "_blank");
+        }
         throw new Error("No checkout URL returned");
       }
     } catch (err: any) {
