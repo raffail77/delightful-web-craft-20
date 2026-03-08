@@ -186,30 +186,13 @@ export default function Wallet() {
       status: "pending",
     });
 
+    setWithdrawing(false);
     if (error) {
-      setWithdrawing(false);
       toast({ title: "Error", description: error.message, variant: "destructive" });
       return;
     }
 
-    // Deduct credits from profile
-    const currentTotal = profile?.time_credits || 0;
-    const currentEarned = profile?.earned_credits || 0;
-    const { error: updateError } = await supabase
-      .from("profiles")
-      .update({
-        time_credits: currentTotal - amount,
-        earned_credits: currentEarned - amount,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("user_id", user!.id);
-
-    setWithdrawing(false);
-    if (updateError) {
-      toast({ title: "Warning", description: "Withdrawal created but credits may not have updated. Please refresh.", variant: "destructive" });
-    } else {
-      toast({ title: "Withdrawal Requested", description: `$${netAmount.toFixed(2)} withdrawal is pending review` });
-    }
+    toast({ title: "Withdrawal Requested", description: `$${netAmount.toFixed(2)} withdrawal is pending admin review` });
     setWithdrawOpen(false);
     setWithdrawAmount("");
     fetchAll();
