@@ -419,6 +419,8 @@ export type Database = {
           show_email: boolean | null
           show_location: boolean | null
           skills: string[] | null
+          stripe_connect_account_id: string | null
+          stripe_connect_onboarding_complete: boolean | null
           time_credits: number
           updated_at: string
           user_id: string
@@ -446,6 +448,8 @@ export type Database = {
           show_email?: boolean | null
           show_location?: boolean | null
           skills?: string[] | null
+          stripe_connect_account_id?: string | null
+          stripe_connect_onboarding_complete?: boolean | null
           time_credits?: number
           updated_at?: string
           user_id: string
@@ -473,6 +477,8 @@ export type Database = {
           show_email?: boolean | null
           show_location?: boolean | null
           skills?: string[] | null
+          stripe_connect_account_id?: string | null
+          stripe_connect_onboarding_complete?: boolean | null
           time_credits?: number
           updated_at?: string
           user_id?: string
