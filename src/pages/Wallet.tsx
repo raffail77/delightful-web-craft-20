@@ -508,6 +508,12 @@ export default function Wallet() {
           </DialogHeader>
 
           <div className="space-y-4 py-2">
+            {(!connectStatus?.onboarding_complete) && (
+              <div className="flex items-start gap-2 text-sm text-destructive bg-destructive/5 rounded-md p-3">
+                <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+                <span>You must <button className="underline font-medium" onClick={handleConnectStripe}>connect a Stripe account</button> before you can withdraw funds.</span>
+              </div>
+            )}
             <div className="text-sm text-muted-foreground">
               Eligible credits: <span className="font-semibold text-foreground">{earnedCredits}</span>
               <br />
