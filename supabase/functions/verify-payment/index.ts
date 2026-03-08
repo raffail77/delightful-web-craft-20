@@ -1,5 +1,5 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import Stripe from "https://esm.sh/stripe@14.21.0?target=deno";
+import { createClient } from "npm:@supabase/supabase-js@2.57.2";
+import Stripe from "https://esm.sh/stripe@18.5.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -39,7 +39,7 @@ Deno.serve(async (req) => {
     const userId = userData.user.id;
 
     const adminClient = createClient(supabaseUrl, supabaseServiceKey);
-    const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
+    const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
 
     // Find pending purchases for this user
     const { data: pendingPurchases } = await adminClient
@@ -67,7 +67,7 @@ Deno.serve(async (req) => {
             .from("credit_purchases")
             .update({
               status: "completed",
-              stripe_payment_intent_id: session.payment_intent as string,
+              stripe_payment_intent_id: typeof session.payment_intent === 'string' ? session.payment_intent : null,
               completed_at: new Date().toISOString(),
             })
             .eq("id", purchase.id);
