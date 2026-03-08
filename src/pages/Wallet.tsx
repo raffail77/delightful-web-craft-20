@@ -158,6 +158,30 @@ export default function Wallet() {
     setLoading(false);
   };
 
+  const fetchConnectStatus = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke("stripe-connect-status");
+      if (!error && data) setConnectStatus(data);
+    } catch (err) {
+      console.error("Connect status error:", err);
+    }
+  };
+
+  const handleConnectStripe = async () => {
+    setConnectLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("stripe-connect-onboard");
+      if (error) throw error;
+      if (data?.url) {
+        window.open(data.url, "_blank");
+      }
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message || "Failed to start onboarding", variant: "destructive" });
+    } finally {
+      setConnectLoading(false);
+    }
+  };
+
   const handleWithdraw = async () => {
     const amount = parseInt(withdrawAmount);
     const payoutRate = parseFloat(settings.payout_rate_usd || "1.50");
