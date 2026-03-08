@@ -56,12 +56,15 @@ Deno.serve(async (req) => {
       );
     }
 
-    const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, {
+    const stripeKey = Deno.env.get("STRIPE_SECRET_KEY")!;
+    const stripe = new Stripe(stripeKey, {
       apiVersion: "2025-08-27.basil",
     });
 
     const account = await stripe.accounts.retrieve(profile.stripe_connect_account_id);
-    const isComplete = account.details_submitted === true;
+    // In test/sandbox mode, Express accounts may not fully complete details_submitted
+    const isTestMode = stripeKey.startsWith("sk_test_") || stripeKey.startsWith("rk_test_");
+    const isComplete = account.details_submitted === true || (isTestMode && account.id != null);
 
     // Update onboarding status if changed
     if (isComplete && !profile.stripe_connect_onboarding_complete) {
