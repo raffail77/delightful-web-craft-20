@@ -74,6 +74,34 @@ export default function Wallet() {
   useEffect(() => {
     if (!user) return;
     fetchAll();
+
+    // Subscribe to profile changes for realtime balance updates
+    const channel = supabase
+      .channel("wallet-profile-updates")
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "profiles",
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          if (payload.new) {
+            setProfile({
+              time_credits: payload.new.time_credits,
+              earned_credits: payload.new.earned_credits,
+              bonus_credits: payload.new.bonus_credits,
+              escrow_credits: payload.new.escrow_credits,
+            });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [user]);
 
   // Verify payment on success redirect
