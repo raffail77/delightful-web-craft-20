@@ -130,7 +130,8 @@ export default function Wallet() {
     verifyPending();
 
     const params = new URLSearchParams(window.location.search);
-    if (params.get("payment") === "success") {
+    if (params.get("payment") === "success" || params.get("connect")) {
+      if (params.get("connect") === "complete") fetchConnectStatus();
       window.history.replaceState({}, "", "/wallet");
     }
   }, [user]);
