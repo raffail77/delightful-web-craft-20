@@ -76,12 +76,29 @@ export default function Wallet() {
     fetchAll();
   }, [user]);
 
-  // Check for payment success
+  // Verify payment on success redirect
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get("payment") === "success") {
-      toast({ title: "Payment Successful!", description: "Credits have been added to your wallet." });
-      refreshCredits();
+      const verifyPayment = async () => {
+        try {
+          const { data, error } = await supabase.functions.invoke("verify-payment");
+          if (error) {
+            console.error("Verify payment error:", error);
+          }
+          if (data?.credits_added > 0) {
+            toast({ title: "Payment Successful!", description: `${data.credits_added} credits have been added to your wallet.` });
+          } else {
+            toast({ title: "Payment Successful!", description: "Credits have been added to your wallet." });
+          }
+        } catch (err) {
+          console.error("Payment verification failed:", err);
+          toast({ title: "Payment Received", description: "Your credits will appear shortly." });
+        }
+        refreshCredits();
+        fetchAll();
+      };
+      verifyPayment();
       window.history.replaceState({}, "", "/wallet");
     }
   }, []);
