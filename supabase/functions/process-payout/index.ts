@@ -156,13 +156,13 @@ Deno.serve(async (req) => {
       .from("withdrawal_requests")
       .update({
         status: "completed",
-        notes: `Stripe transfer: ${transfer.id}`,
+        notes: `Stripe transfer: ${transferId}`,
         processed_at: new Date().toISOString(),
       })
       .eq("id", withdrawal_id);
 
     return new Response(
-      JSON.stringify({ success: true, transfer_id: transfer.id }),
+      JSON.stringify({ success: true, transfer_id: transferId }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
