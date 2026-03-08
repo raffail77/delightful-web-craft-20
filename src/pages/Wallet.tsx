@@ -76,6 +76,7 @@ export default function Wallet() {
   useEffect(() => {
     if (!user) return;
     fetchAll();
+    fetchConnectStatus();
 
     // Subscribe to profile changes for realtime balance updates
     const channel = supabase
