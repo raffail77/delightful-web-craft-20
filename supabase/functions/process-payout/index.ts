@@ -156,9 +156,14 @@ Deno.serve(async (req) => {
     );
   } catch (error) {
     console.error("Payout error:", error);
+    const isStripeError = error?.type?.startsWith("Stripe");
+    const status = isStripeError ? 400 : 500;
+    const message = error?.code === "balance_insufficient"
+      ? "Insufficient Stripe platform balance to process this payout. Please add funds to your Stripe account first."
+      : error.message;
     return new Response(
-      JSON.stringify({ error: error.message }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      JSON.stringify({ error: message }),
+      { status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });
