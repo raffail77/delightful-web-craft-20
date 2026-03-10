@@ -60,7 +60,23 @@ Deno.serve(async (req) => {
       apiVersion: "2025-08-27.basil",
     });
 
-    const account = await stripe.accounts.retrieve(profile.stripe_connect_account_id);
+    let account;
+    try {
+      account = await stripe.accounts.retrieve(profile.stripe_connect_account_id);
+    } catch (retrieveErr: any) {
+      // Account is stale/invalid — clear it and return disconnected
+      console.warn(`Stored Connect account ${profile.stripe_connect_account_id} is invalid, clearing.`, retrieveErr.message);
+      await adminSupabase
+        .from("profiles")
+        .update({ stripe_connect_account_id: null, stripe_connect_onboarding_complete: false })
+        .eq("user_id", userId);
+
+      return new Response(
+        JSON.stringify({ connected: false, onboarding_complete: false }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const isComplete = account.details_submitted === true;
 
     // Update onboarding status if changed
