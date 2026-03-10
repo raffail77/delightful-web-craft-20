@@ -61,6 +61,7 @@ Deno.serve(async (req) => {
         type: "express",
         email: profile?.email || undefined,
         capabilities: {
+          card_payments: { requested: true },
           transfers: { requested: true },
         },
         metadata: {
