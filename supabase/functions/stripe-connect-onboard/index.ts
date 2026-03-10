@@ -55,6 +55,21 @@ Deno.serve(async (req) => {
 
     let accountId = profile?.stripe_connect_account_id;
 
+    // If we have a stored account ID, verify it's still valid under the current Stripe key
+    if (accountId) {
+      try {
+        await stripe.accounts.retrieve(accountId);
+      } catch (verifyErr: any) {
+        console.warn(`Stored Connect account ${accountId} is invalid/inaccessible, clearing and creating new one.`, verifyErr.message);
+        accountId = null;
+        // Clear the stale account ID
+        await adminSupabase
+          .from("profiles")
+          .update({ stripe_connect_account_id: null, stripe_connect_onboarding_complete: false })
+          .eq("user_id", userId);
+      }
+    }
+
     if (!accountId) {
       // Create a new Stripe Connect Express account
       const account = await stripe.accounts.create({
