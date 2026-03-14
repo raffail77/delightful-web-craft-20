@@ -580,7 +580,7 @@ const ServiceCard = ({
               <Button
                 variant="ghost"
                 size="icon"
-                className="absolute top-3 right-3 h-7 w-7 text-white/70 hover:text-destructive hover:bg-white/10"
+                className="absolute top-3 right-3 h-7 w-7 z-10 text-white/70 hover:text-destructive hover:bg-white/10"
                 onClick={(e) => e.stopPropagation()}
               >
                 <Trash2 className="w-4 h-4" />
