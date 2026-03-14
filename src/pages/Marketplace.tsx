@@ -258,6 +258,16 @@ const Marketplace = () => {
     setHourlyCredits(1);
     setLocation("");
     setIsRemote(true);
+    setImageFile(null);
+    setImagePreview(null);
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImageFile(file);
+      setImagePreview(URL.createObjectURL(file));
+    }
   };
 
   const filteredServices = services.filter((service) => {
