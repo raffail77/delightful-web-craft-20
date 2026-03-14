@@ -412,6 +412,7 @@ export type Database = {
           id: string
           is_suspended: boolean | null
           is_verified: boolean | null
+          last_free_credits_at: string | null
           location: string | null
           profile_slug: string | null
           profile_visibility: string | null
@@ -441,6 +442,7 @@ export type Database = {
           id?: string
           is_suspended?: boolean | null
           is_verified?: boolean | null
+          last_free_credits_at?: string | null
           location?: string | null
           profile_slug?: string | null
           profile_visibility?: string | null
@@ -470,6 +472,7 @@ export type Database = {
           id?: string
           is_suspended?: boolean | null
           is_verified?: boolean | null
+          last_free_credits_at?: string | null
           location?: string | null
           profile_slug?: string | null
           profile_visibility?: string | null

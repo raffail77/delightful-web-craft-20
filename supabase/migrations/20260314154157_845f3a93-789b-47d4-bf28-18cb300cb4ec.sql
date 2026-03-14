@@ -1,0 +1,1 @@
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS last_free_credits_at timestamp with time zone DEFAULT NULL;
