@@ -50,6 +50,8 @@ import {
   Trash2,
   Star,
   ArrowRight,
+  ImagePlus,
+  X,
 } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 import MessagingDialog from "@/components/MessagingDialog";
@@ -112,6 +114,8 @@ const Marketplace = () => {
   const [location, setLocation] = useState("");
   const [isRemote, setIsRemote] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   const handleContactProvider = (
     receiverId: string,
@@ -202,6 +206,29 @@ const Marketplace = () => {
       return;
     }
     setIsSubmitting(true);
+
+    let imageUrl: string | null = null;
+
+    // Upload image if selected
+    if (imageFile) {
+      const ext = imageFile.name.split(".").pop();
+      const filePath = `${user.id}/${Date.now()}.${ext}`;
+      const { error: uploadError } = await supabase.storage
+        .from("service-images")
+        .upload(filePath, imageFile);
+
+      if (uploadError) {
+        toast({ title: "Image upload failed", description: uploadError.message, variant: "destructive" });
+        setIsSubmitting(false);
+        return;
+      }
+
+      const { data: publicUrlData } = supabase.storage
+        .from("service-images")
+        .getPublicUrl(filePath);
+      imageUrl = publicUrlData.publicUrl;
+    }
+
     const { error } = await supabase.from("services").insert({
       user_id: user.id,
       title,
@@ -211,7 +238,8 @@ const Marketplace = () => {
       hourly_credits: hourlyCredits,
       location: location || null,
       is_remote: isRemote,
-    });
+      image_url: imageUrl,
+    } as any);
     setIsSubmitting(false);
     if (error) {
       toast({ title: "Error", description: "Failed to create service", variant: "destructive" });
@@ -230,6 +258,16 @@ const Marketplace = () => {
     setHourlyCredits(1);
     setLocation("");
     setIsRemote(true);
+    setImageFile(null);
+    setImagePreview(null);
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImageFile(file);
+      setImagePreview(URL.createObjectURL(file));
+    }
   };
 
   const filteredServices = services.filter((service) => {
@@ -360,6 +398,30 @@ const Marketplace = () => {
                       <span className="text-sm">Available remotely</span>
                     </div>
                     <Switch checked={isRemote} onCheckedChange={setIsRemote} />
+                   </div>
+                  {/* Image upload */}
+                  <div className="space-y-2">
+                    <Label>Cover Image (optional)</Label>
+                    {imagePreview ? (
+                      <div className="relative rounded-lg overflow-hidden h-32">
+                        <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="absolute top-1 right-1 h-7 w-7 bg-background/80 hover:bg-background"
+                          onClick={() => { setImageFile(null); setImagePreview(null); }}
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <label className="flex flex-col items-center justify-center h-24 rounded-lg border-2 border-dashed border-border hover:border-primary/50 cursor-pointer transition-colors">
+                        <ImagePlus className="w-6 h-6 text-muted-foreground mb-1" />
+                        <span className="text-xs text-muted-foreground">Click to upload</span>
+                        <input type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
+                      </label>
+                    )}
                   </div>
                   <Button type="submit" variant="gold" className="w-full" disabled={isSubmitting || !category}>
                     {isSubmitting ? "Posting..." : "Post Service"}
@@ -492,10 +554,18 @@ const ServiceCard = ({
       className="group rounded-xl border border-border bg-card overflow-hidden hover-lift cursor-pointer"
       onClick={() => onDetail(service)}
     >
-      {/* Color header strip based on category */}
+      {/* Color header strip / image */}
       <div className="relative h-36 bg-gradient-navy flex items-end p-4">
+        {(service as any).image_url && (
+          <img
+            src={(service as any).image_url}
+            alt={service.title}
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+          )}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
         <Badge
-          className={`absolute top-3 left-3 text-xs ${
+          className={`absolute top-3 left-3 z-10 text-xs ${
             service.service_type === "offer"
               ? "bg-emerald-500/90 text-white hover:bg-emerald-500"
               : "bg-sky-500/90 text-white hover:bg-sky-500"
@@ -510,7 +580,7 @@ const ServiceCard = ({
               <Button
                 variant="ghost"
                 size="icon"
-                className="absolute top-3 right-3 h-7 w-7 text-white/70 hover:text-destructive hover:bg-white/10"
+                className="absolute top-3 right-3 h-7 w-7 z-10 text-white/70 hover:text-destructive hover:bg-white/10"
                 onClick={(e) => e.stopPropagation()}
               >
                 <Trash2 className="w-4 h-4" />
@@ -533,7 +603,7 @@ const ServiceCard = ({
           </AlertDialog>
         )}
 
-        <h3 className="text-white font-semibold text-sm leading-snug line-clamp-2 drop-shadow-md">
+        <h3 className="relative z-10 text-white font-semibold text-sm leading-snug line-clamp-2 drop-shadow-md">
           {service.title}
         </h3>
       </div>

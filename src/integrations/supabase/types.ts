@@ -569,6 +569,7 @@ export type Database = {
           description: string
           hourly_credits: number
           id: string
+          image_url: string | null
           is_active: boolean
           is_remote: boolean
           location: string | null
@@ -583,6 +584,7 @@ export type Database = {
           description: string
           hourly_credits?: number
           id?: string
+          image_url?: string | null
           is_active?: boolean
           is_remote?: boolean
           location?: string | null
@@ -597,6 +599,7 @@ export type Database = {
           description?: string
           hourly_credits?: number
           id?: string
+          image_url?: string | null
           is_active?: boolean
           is_remote?: boolean
           location?: string | null
