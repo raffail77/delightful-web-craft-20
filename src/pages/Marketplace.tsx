@@ -565,7 +565,7 @@ const ServiceCard = ({
           )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
         <Badge
-          className={`absolute top-3 left-3 text-xs ${
+          className={`absolute top-3 left-3 z-10 text-xs ${
             service.service_type === "offer"
               ? "bg-emerald-500/90 text-white hover:bg-emerald-500"
               : "bg-sky-500/90 text-white hover:bg-sky-500"
