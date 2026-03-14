@@ -603,7 +603,7 @@ const ServiceCard = ({
           </AlertDialog>
         )}
 
-        <h3 className="text-white font-semibold text-sm leading-snug line-clamp-2 drop-shadow-md">
+        <h3 className="relative z-10 text-white font-semibold text-sm leading-snug line-clamp-2 drop-shadow-md">
           {service.title}
         </h3>
       </div>
