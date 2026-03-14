@@ -398,6 +398,30 @@ const Marketplace = () => {
                       <span className="text-sm">Available remotely</span>
                     </div>
                     <Switch checked={isRemote} onCheckedChange={setIsRemote} />
+                   </div>
+                  {/* Image upload */}
+                  <div className="space-y-2">
+                    <Label>Cover Image (optional)</Label>
+                    {imagePreview ? (
+                      <div className="relative rounded-lg overflow-hidden h-32">
+                        <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="absolute top-1 right-1 h-7 w-7 bg-background/80 hover:bg-background"
+                          onClick={() => { setImageFile(null); setImagePreview(null); }}
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <label className="flex flex-col items-center justify-center h-24 rounded-lg border-2 border-dashed border-border hover:border-primary/50 cursor-pointer transition-colors">
+                        <ImagePlus className="w-6 h-6 text-muted-foreground mb-1" />
+                        <span className="text-xs text-muted-foreground">Click to upload</span>
+                        <input type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
+                      </label>
+                    )}
                   </div>
                   <Button type="submit" variant="gold" className="w-full" disabled={isSubmitting || !category}>
                     {isSubmitting ? "Posting..." : "Post Service"}
