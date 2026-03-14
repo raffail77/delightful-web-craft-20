@@ -296,13 +296,14 @@ export default function Wallet() {
                 <p className="text-2xl font-bold text-green-600">{earnedCredits}</p>
               </CardContent>
             </Card>
-            <Card>
+             <Card>
               <CardContent className="pt-5 pb-4">
                 <div className="flex items-center gap-2 mb-1">
-                  <CreditCard className="w-4 h-4 text-blue-500" />
-                  <span className="text-sm text-muted-foreground">Bonus</span>
+                  <Gift className="w-4 h-4 text-blue-500" />
+                  <span className="text-sm text-muted-foreground">Free Credits</span>
                 </div>
                 <p className="text-2xl font-bold text-blue-600">{bonusCredits}</p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">Signup bonus & rewards</p>
               </CardContent>
             </Card>
             <Card>
