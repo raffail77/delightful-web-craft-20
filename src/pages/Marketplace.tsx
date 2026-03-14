@@ -114,6 +114,8 @@ const Marketplace = () => {
   const [location, setLocation] = useState("");
   const [isRemote, setIsRemote] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   const handleContactProvider = (
     receiverId: string,
