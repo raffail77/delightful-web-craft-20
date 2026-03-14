@@ -554,8 +554,16 @@ const ServiceCard = ({
       className="group rounded-xl border border-border bg-card overflow-hidden hover-lift cursor-pointer"
       onClick={() => onDetail(service)}
     >
-      {/* Color header strip based on category */}
+      {/* Color header strip / image */}
       <div className="relative h-36 bg-gradient-navy flex items-end p-4">
+        {(service as any).image_url && (
+          <img
+            src={(service as any).image_url}
+            alt={service.title}
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+          )}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
         <Badge
           className={`absolute top-3 left-3 text-xs ${
             service.service_type === "offer"
