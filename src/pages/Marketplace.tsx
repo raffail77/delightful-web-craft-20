@@ -206,6 +206,29 @@ const Marketplace = () => {
       return;
     }
     setIsSubmitting(true);
+
+    let imageUrl: string | null = null;
+
+    // Upload image if selected
+    if (imageFile) {
+      const ext = imageFile.name.split(".").pop();
+      const filePath = `${user.id}/${Date.now()}.${ext}`;
+      const { error: uploadError } = await supabase.storage
+        .from("service-images")
+        .upload(filePath, imageFile);
+
+      if (uploadError) {
+        toast({ title: "Image upload failed", description: uploadError.message, variant: "destructive" });
+        setIsSubmitting(false);
+        return;
+      }
+
+      const { data: publicUrlData } = supabase.storage
+        .from("service-images")
+        .getPublicUrl(filePath);
+      imageUrl = publicUrlData.publicUrl;
+    }
+
     const { error } = await supabase.from("services").insert({
       user_id: user.id,
       title,
@@ -215,7 +238,8 @@ const Marketplace = () => {
       hourly_credits: hourlyCredits,
       location: location || null,
       is_remote: isRemote,
-    });
+      image_url: imageUrl,
+    } as any);
     setIsSubmitting(false);
     if (error) {
       toast({ title: "Error", description: "Failed to create service", variant: "destructive" });
