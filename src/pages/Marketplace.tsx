@@ -50,6 +50,8 @@ import {
   Trash2,
   Star,
   ArrowRight,
+  ImagePlus,
+  X,
 } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 import MessagingDialog from "@/components/MessagingDialog";
