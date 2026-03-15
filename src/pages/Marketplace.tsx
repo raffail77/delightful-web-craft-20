@@ -55,7 +55,6 @@ import {
 } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 import MessagingDialog from "@/components/MessagingDialog";
-import ServiceDetailDialog from "@/components/marketplace/ServiceDetailDialog";
 
 type ServiceProfile = {
   full_name: string | null;
