@@ -29,6 +29,7 @@ import TermsOfService from "./pages/TermsOfService";
 import CookiePolicy from "./pages/CookiePolicy";
 import BuyCredits from "./pages/BuyCredits";
 import Wallet from "./pages/Wallet";
+import ServiceDetail from "./pages/ServiceDetail";
 import AdminLayout from "./components/admin/AdminLayout";
 import AdminOverview from "./pages/admin/AdminOverview";
 import AdminUsers from "./pages/admin/AdminUsers";
