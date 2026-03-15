@@ -101,9 +101,6 @@ const Marketplace = () => {
   const [messagingReceiver, setMessagingReceiver] = useState({ id: "", name: "" });
   const [messagingService, setMessagingService] = useState<{ id: string; title: string; serviceType?: "offer" | "request"; serviceOwnerId?: string }>({ id: "", title: "" });
 
-  // Detail dialog state
-  const [detailService, setDetailService] = useState<Service | null>(null);
-
   // Form state
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
