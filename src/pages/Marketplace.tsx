@@ -486,25 +486,6 @@ const Marketplace = () => {
         </div>
       </main>
 
-      <ServiceDetailDialog
-        open={!!detailService}
-        onOpenChange={(open) => !open && setDetailService(null)}
-        service={detailService}
-        currentUserId={user?.id}
-        onContact={() => {
-          if (detailService) {
-            setDetailService(null);
-            handleContactProvider(
-              detailService.user_id,
-              detailService.profiles?.full_name || "User",
-              detailService.id,
-              detailService.title,
-              detailService.service_type,
-              detailService.user_id
-            );
-          }
-        }}
-      />
 
       <MessagingDialog
         open={messagingOpen}
