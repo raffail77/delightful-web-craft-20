@@ -29,6 +29,7 @@ import TermsOfService from "./pages/TermsOfService";
 import CookiePolicy from "./pages/CookiePolicy";
 import BuyCredits from "./pages/BuyCredits";
 import Wallet from "./pages/Wallet";
+import ServiceDetail from "./pages/ServiceDetail";
 import AdminLayout from "./components/admin/AdminLayout";
 import AdminOverview from "./pages/admin/AdminOverview";
 import AdminUsers from "./pages/admin/AdminUsers";
@@ -61,6 +62,7 @@ const App = () => (
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/buy-credits" element={<BuyCredits />} />
             <Route path="/wallet" element={<Wallet />} />
+            <Route path="/service/:id" element={<ServiceDetail />} />
             <Route path="/pricing" element={<Pricing />} />
             <Route path="/about" element={<About />} />
             <Route path="/careers" element={<Careers />} />

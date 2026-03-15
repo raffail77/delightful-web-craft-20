@@ -55,7 +55,6 @@ import {
 } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 import MessagingDialog from "@/components/MessagingDialog";
-import ServiceDetailDialog from "@/components/marketplace/ServiceDetailDialog";
 
 type ServiceProfile = {
   full_name: string | null;
@@ -101,9 +100,6 @@ const Marketplace = () => {
   const [messagingOpen, setMessagingOpen] = useState(false);
   const [messagingReceiver, setMessagingReceiver] = useState({ id: "", name: "" });
   const [messagingService, setMessagingService] = useState<{ id: string; title: string; serviceType?: "offer" | "request"; serviceOwnerId?: string }>({ id: "", title: "" });
-
-  // Detail dialog state
-  const [detailService, setDetailService] = useState<Service | null>(null);
 
   // Form state
   const [title, setTitle] = useState("");
@@ -483,7 +479,6 @@ const Marketplace = () => {
                   currentUserId={user?.id}
                   onContact={handleContactProvider}
                   onDelete={handleDeleteService}
-                  onDetail={setDetailService}
                 />
               ))}
             </div>
@@ -491,25 +486,6 @@ const Marketplace = () => {
         </div>
       </main>
 
-      <ServiceDetailDialog
-        open={!!detailService}
-        onOpenChange={(open) => !open && setDetailService(null)}
-        service={detailService}
-        currentUserId={user?.id}
-        onContact={() => {
-          if (detailService) {
-            setDetailService(null);
-            handleContactProvider(
-              detailService.user_id,
-              detailService.profiles?.full_name || "User",
-              detailService.id,
-              detailService.title,
-              detailService.service_type,
-              detailService.user_id
-            );
-          }
-        }}
-      />
 
       <MessagingDialog
         open={messagingOpen}
@@ -534,14 +510,13 @@ const ServiceCard = ({
   currentUserId,
   onContact,
   onDelete,
-  onDetail,
 }: {
   service: Service;
   currentUserId?: string;
   onContact: (receiverId: string, receiverName: string, serviceId: string, serviceTitle: string, serviceType: "offer" | "request", serviceOwnerId: string) => void;
   onDelete: (serviceId: string) => void;
-  onDetail: (service: Service) => void;
 }) => {
+  const navigate = useNavigate();
   const isOwner = currentUserId === service.user_id;
   const showContactButton = currentUserId && !isOwner;
   const contactLabel = service.service_type === "offer" ? "Contact Provider" : "Contact Receiver";
@@ -552,7 +527,7 @@ const ServiceCard = ({
   return (
     <div
       className="group rounded-xl border border-border bg-card overflow-hidden hover-lift cursor-pointer"
-      onClick={() => onDetail(service)}
+      onClick={() => navigate(`/service/${service.id}`)}
     >
       {/* Color header strip / image */}
       <div className="relative h-36 bg-gradient-navy flex items-end p-4">
