@@ -510,14 +510,13 @@ const ServiceCard = ({
   currentUserId,
   onContact,
   onDelete,
-  onDetail,
 }: {
   service: Service;
   currentUserId?: string;
   onContact: (receiverId: string, receiverName: string, serviceId: string, serviceTitle: string, serviceType: "offer" | "request", serviceOwnerId: string) => void;
   onDelete: (serviceId: string) => void;
-  onDetail: (service: Service) => void;
 }) => {
+  const navigate = useNavigate();
   const isOwner = currentUserId === service.user_id;
   const showContactButton = currentUserId && !isOwner;
   const contactLabel = service.service_type === "offer" ? "Contact Provider" : "Contact Receiver";
@@ -528,7 +527,7 @@ const ServiceCard = ({
   return (
     <div
       className="group rounded-xl border border-border bg-card overflow-hidden hover-lift cursor-pointer"
-      onClick={() => onDetail(service)}
+      onClick={() => navigate(`/service/${service.id}`)}
     >
       {/* Color header strip / image */}
       <div className="relative h-36 bg-gradient-navy flex items-end p-4">
