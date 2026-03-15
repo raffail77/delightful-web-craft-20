@@ -479,7 +479,6 @@ const Marketplace = () => {
                   currentUserId={user?.id}
                   onContact={handleContactProvider}
                   onDelete={handleDeleteService}
-                  onDetail={setDetailService}
                 />
               ))}
             </div>
