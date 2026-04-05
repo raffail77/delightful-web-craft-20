@@ -1,5 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import Stripe from "https://esm.sh/stripe@18.5.0";
+import { checkRateLimit, rateLimitHeaders, getRateLimitKey } from "../_shared/rate-limit.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -17,6 +18,16 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Rate limit: 5 checkout sessions per minute per IP
+    const rlKey = getRateLimitKey(req, "checkout");
+    const rl = checkRateLimit(rlKey, 5, 60_000);
+    if (!rl.allowed) {
+      return new Response(JSON.stringify({ error: "Too many requests. Please try again later." }), {
+        status: 429,
+        headers: { ...corsHeaders, ...rateLimitHeaders(rl.remaining, rl.retryAfterMs), "Content-Type": "application/json" },
+      });
+    }
+
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     if (!stripeKey) throw new Error("STRIPE_SECRET_KEY not configured");
 
