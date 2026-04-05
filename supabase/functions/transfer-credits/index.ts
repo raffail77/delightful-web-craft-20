@@ -36,6 +36,16 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Rate limit: 10 transfers per minute per IP
+    const rlKey = getRateLimitKey(req, "transfer");
+    const rl = checkRateLimit(rlKey, 10, 60_000);
+    if (!rl.allowed) {
+      return new Response(JSON.stringify({ error: "Too many requests. Please try again later." }), {
+        status: 429,
+        headers: { ...corsHeaders, ...rateLimitHeaders(rl.remaining, rl.retryAfterMs), "Content-Type": "application/json" },
+      });
+    }
+
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       return new Response(JSON.stringify({ error: "No authorization header" }), {
