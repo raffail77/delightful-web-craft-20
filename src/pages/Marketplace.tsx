@@ -201,6 +201,40 @@ const Marketplace = () => {
       toast({ title: "Please sign in", description: "You need to be logged in to create a service", variant: "destructive" });
       return;
     }
+
+    // Client-side validation
+    const trimmedTitle = title.trim();
+    const trimmedDesc = description.trim();
+    if (trimmedTitle.length < 3 || trimmedTitle.length > 120) {
+      toast({ title: "Invalid title", description: "Title must be 3-120 characters", variant: "destructive" });
+      return;
+    }
+    if (trimmedDesc.length < 10 || trimmedDesc.length > 2000) {
+      toast({ title: "Invalid description", description: "Description must be 10-2000 characters", variant: "destructive" });
+      return;
+    }
+    if (!category) {
+      toast({ title: "Category required", description: "Please select a category", variant: "destructive" });
+      return;
+    }
+    if (hourlyCredits < 1 || hourlyCredits > 100 || !Number.isInteger(hourlyCredits)) {
+      toast({ title: "Invalid credits", description: "Credits must be 1-100", variant: "destructive" });
+      return;
+    }
+
+    // Validate image file type if present
+    if (imageFile) {
+      const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+      if (!allowedTypes.includes(imageFile.type)) {
+        toast({ title: "Invalid image", description: "Only JPEG, PNG, WebP, and GIF images are allowed", variant: "destructive" });
+        return;
+      }
+      if (imageFile.size > 5 * 1024 * 1024) {
+        toast({ title: "Image too large", description: "Maximum file size is 5MB", variant: "destructive" });
+        return;
+      }
+    }
+
     setIsSubmitting(true);
 
     let imageUrl: string | null = null;

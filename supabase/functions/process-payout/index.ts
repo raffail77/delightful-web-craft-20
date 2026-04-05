@@ -7,6 +7,10 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+function isValidUUID(str: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -58,9 +62,20 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { withdrawal_id } = await req.json();
-    if (!withdrawal_id) {
-      return new Response(JSON.stringify({ error: "withdrawal_id required" }), {
+    // Parse and validate body
+    let body: Record<string, unknown>;
+    try {
+      body = await req.json();
+    } catch {
+      return new Response(JSON.stringify({ error: "Invalid JSON body" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const { withdrawal_id } = body;
+    if (!withdrawal_id || typeof withdrawal_id !== "string" || !isValidUUID(withdrawal_id)) {
+      return new Response(JSON.stringify({ error: "Valid withdrawal_id (UUID) required" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -95,7 +110,6 @@ Deno.serve(async (req) => {
       .single();
 
     if (!profile?.stripe_connect_account_id || !profile.stripe_connect_onboarding_complete) {
-      // Mark as rejected - user hasn't connected Stripe
       await adminSupabase
         .from("withdrawal_requests")
         .update({
@@ -115,7 +129,6 @@ Deno.serve(async (req) => {
       apiVersion: "2025-08-27.basil",
     });
 
-    // Create a transfer to the connected account
     const netAmountCents = Math.round(Number(withdrawal.net_amount) * 100);
 
     const transfer = await stripe.transfers.create({

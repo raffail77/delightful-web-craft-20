@@ -7,6 +7,10 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+function isValidUUID(str: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -40,9 +44,19 @@ Deno.serve(async (req) => {
     const userId = user.id;
     const userEmail = user.email;
 
-    const { package_id } = await req.json();
-    if (!package_id) {
-      return new Response(JSON.stringify({ error: "package_id required" }), {
+    // Parse and validate body
+    let body: Record<string, unknown>;
+    try {
+      body = await req.json();
+    } catch {
+      return new Response(JSON.stringify({ error: "Invalid JSON body" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const { package_id } = body;
+    if (!package_id || typeof package_id !== "string" || !isValidUUID(package_id)) {
+      return new Response(JSON.stringify({ error: "Valid package_id (UUID) required" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -84,8 +98,12 @@ Deno.serve(async (req) => {
       .select("id")
       .single();
 
-    // Get origin for redirect
-    const origin = req.headers.get("origin") || "https://id-preview--a93a3514-3c80-4bad-bd2e-7da43ca74999.lovable.app";
+    // Get origin for redirect — validate it's from our domain
+    const rawOrigin = req.headers.get("origin") || "";
+    const allowedOriginPattern = /^https?:\/\/(localhost(:\d+)?|.*\.lovable\.app)$/;
+    const origin = allowedOriginPattern.test(rawOrigin)
+      ? rawOrigin
+      : "https://id-preview--a93a3514-3c80-4bad-bd2e-7da43ca74999.lovable.app";
 
     // Create checkout session
     const session = await stripe.checkout.sessions.create({
