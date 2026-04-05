@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { checkRateLimit, rateLimitHeaders, getRateLimitKey } from "../_shared/rate-limit.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -11,7 +12,46 @@ serve(async (req) => {
   }
 
   try {
-    const { messages } = await req.json();
+    // Rate limit: 15 chat requests per minute per IP
+    const rlKey = getRateLimitKey(req, "chat");
+    const rl = checkRateLimit(rlKey, 15, 60_000);
+    if (!rl.allowed) {
+      return new Response(JSON.stringify({ error: "Too many requests. Please slow down." }), {
+        status: 429,
+        headers: { ...corsHeaders, ...rateLimitHeaders(rl.remaining, rl.retryAfterMs), "Content-Type": "application/json" },
+      });
+    }
+
+    // Validate input
+    let body: Record<string, unknown>;
+    try {
+      body = await req.json();
+    } catch {
+      return new Response(JSON.stringify({ error: "Invalid JSON body" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const { messages } = body;
+    if (!Array.isArray(messages) || messages.length === 0 || messages.length > 50) {
+      return new Response(JSON.stringify({ error: "Invalid messages: must be a non-empty array (max 50)" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Validate each message structure
+    for (const msg of messages) {
+      if (!msg || typeof msg !== "object" || !["user", "assistant", "system"].includes(msg.role) || typeof msg.content !== "string") {
+        return new Response(JSON.stringify({ error: "Invalid message format" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      if (msg.content.length > 10000) {
+        return new Response(JSON.stringify({ error: "Message too long (max 10000 chars)" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
     if (!LOVABLE_API_KEY) {
