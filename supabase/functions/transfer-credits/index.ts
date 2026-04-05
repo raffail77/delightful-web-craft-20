@@ -6,6 +6,15 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
+// Inline validation helpers (no external deps in Deno edge functions)
+function isValidUUID(str: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+}
+
+function sanitizeString(str: string, maxLen: number): string {
+  return str.replace(/<[^>]*>/g, "").trim().slice(0, maxLen);
+}
+
 interface TransferRequest {
   receiver_id: string;
   amount: number;
@@ -14,13 +23,11 @@ interface TransferRequest {
 }
 
 Deno.serve(async (req) => {
-  // Handle CORS preflight
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    // Only allow POST
     if (req.method !== "POST") {
       return new Response(JSON.stringify({ error: "Method not allowed" }), {
         status: 405,
@@ -28,7 +35,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Get authorization header
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       return new Response(JSON.stringify({ error: "No authorization header" }), {
@@ -37,38 +43,44 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Create Supabase client with user's token for auth
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    // User client to verify auth
     const userClient = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } },
     });
 
-    // Verify user
     const { data: { user }, error: authError } = await userClient.auth.getUser();
     if (authError || !user) {
-      console.error("Auth error:", authError);
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Parse request body
-    const body: TransferRequest = await req.json();
-    const { receiver_id, amount, service_id, description } = body;
-
-    // Validate input
-    if (!receiver_id || typeof receiver_id !== "string") {
-      return new Response(JSON.stringify({ error: "Invalid receiver_id" }), {
+    // Parse and validate request body
+    let body: TransferRequest;
+    try {
+      body = await req.json();
+    } catch {
+      return new Response(JSON.stringify({ error: "Invalid JSON body" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
+    const { receiver_id, amount, service_id, description } = body;
+
+    // Validate receiver_id is a proper UUID
+    if (!receiver_id || typeof receiver_id !== "string" || !isValidUUID(receiver_id)) {
+      return new Response(JSON.stringify({ error: "Invalid receiver_id: must be a valid UUID" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Validate amount
     if (!amount || typeof amount !== "number" || amount <= 0 || !Number.isInteger(amount)) {
       return new Response(JSON.stringify({ error: "Amount must be a positive integer" }), {
         status: 400,
@@ -83,6 +95,19 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Validate optional service_id
+    if (service_id && !isValidUUID(service_id)) {
+      return new Response(JSON.stringify({ error: "Invalid service_id format" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Sanitize description
+    const sanitizedDescription = description
+      ? sanitizeString(description, 500)
+      : undefined;
+
     if (user.id === receiver_id) {
       return new Response(JSON.stringify({ error: "Cannot transfer credits to yourself" }), {
         status: 400,
@@ -90,10 +115,8 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Use service role client for the actual transfer (bypasses RLS)
     const adminClient = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Verify receiver exists
     const { data: receiverProfile, error: receiverError } = await adminClient
       .from("profiles")
       .select("user_id, full_name")
@@ -101,14 +124,12 @@ Deno.serve(async (req) => {
       .single();
 
     if (receiverError || !receiverProfile) {
-      console.error("Receiver not found:", receiverError);
       return new Response(JSON.stringify({ error: "Receiver not found" }), {
         status: 404,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Call the secure transfer function
     const { data: transactionId, error: transferError } = await adminClient.rpc(
       "transfer_credits",
       {
@@ -116,21 +137,20 @@ Deno.serve(async (req) => {
         p_receiver_id: receiver_id,
         p_amount: amount,
         p_service_id: service_id || null,
-        p_description: description || `Transfer to ${receiverProfile.full_name || "user"}`,
+        p_description: sanitizedDescription || `Transfer to ${receiverProfile.full_name || "user"}`,
       }
     );
 
     if (transferError) {
       console.error("Transfer error:", transferError);
-      
-      // Parse the error message for user-friendly response
+
       if (transferError.message.includes("Insufficient credits")) {
         return new Response(JSON.stringify({ error: "Insufficient credits" }), {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      
+
       return new Response(JSON.stringify({ error: "Transfer failed" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
