@@ -102,7 +102,7 @@ const Marketplace = () => {
   // Messaging state
   const [messagingOpen, setMessagingOpen] = useState(false);
   const [messagingReceiver, setMessagingReceiver] = useState({ id: "", name: "" });
-  const [messagingService, setMessagingService] = useState<{ id: string; title: string; serviceType?: "offer" | "request"; serviceOwnerId?: string }>({ id: "", title: "" });
+  const [messagingService, setMessagingService] = useState<{ id: string; title: string; serviceType?: "offer" | "request"; serviceOwnerId?: string; paymentMethod?: "credits" | "stripe" | "both" }>({ id: "", title: "" });
 
   // Form state
   const [title, setTitle] = useState("");
@@ -123,7 +123,8 @@ const Marketplace = () => {
     serviceId: string,
     serviceTitle: string,
     svcType: "offer" | "request",
-    serviceOwnerId: string
+    serviceOwnerId: string,
+    paymentMethod?: "credits" | "stripe" | "both"
   ) => {
     if (!user) {
       toast({ title: "Sign in required", description: "Please sign in to contact this user" });
@@ -131,7 +132,7 @@ const Marketplace = () => {
       return;
     }
     setMessagingReceiver({ id: receiverId, name: receiverName });
-    setMessagingService({ id: serviceId, title: serviceTitle, serviceType: svcType, serviceOwnerId });
+    setMessagingService({ id: serviceId, title: serviceTitle, serviceType: svcType, serviceOwnerId, paymentMethod });
     setMessagingOpen(true);
   };
 
@@ -572,6 +573,7 @@ const Marketplace = () => {
         serviceTitle={messagingService.title}
         serviceType={messagingService.serviceType}
         serviceOwnerId={messagingService.serviceOwnerId}
+        servicePaymentMethod={messagingService.paymentMethod}
       />
 
       <Footer />
