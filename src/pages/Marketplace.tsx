@@ -52,7 +52,10 @@ import {
   ArrowRight,
   ImagePlus,
   X,
+  CreditCard,
+  DollarSign,
 } from "lucide-react";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import type { Database } from "@/integrations/supabase/types";
 import MessagingDialog from "@/components/MessagingDialog";
 
@@ -112,6 +115,7 @@ const Marketplace = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<"credits" | "stripe" | "both">("credits");
 
   const handleContactProvider = (
     receiverId: string,
@@ -269,6 +273,7 @@ const Marketplace = () => {
       location: location || null,
       is_remote: isRemote,
       image_url: imageUrl,
+      payment_method: paymentMethod,
     } as any);
     setIsSubmitting(false);
     if (error) {
@@ -290,6 +295,7 @@ const Marketplace = () => {
     setIsRemote(true);
     setImageFile(null);
     setImagePreview(null);
+    setPaymentMethod("credits");
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
