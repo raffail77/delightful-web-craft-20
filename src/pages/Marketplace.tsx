@@ -427,6 +427,42 @@ const Marketplace = () => {
                       <Label htmlFor="location">Location (optional)</Label>
                       <Input id="location" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="City, State" />
                     </div>
+                   </div>
+                  {/* Payment Method */}
+                  <div className="space-y-2">
+                    <Label>Payment Method</Label>
+                    <RadioGroup value={paymentMethod} onValueChange={(v) => setPaymentMethod(v as "credits" | "stripe" | "both")} className="space-y-2">
+                      <div className="flex items-center space-x-2 p-2 rounded-lg border border-border hover:bg-muted/50">
+                        <RadioGroupItem value="credits" id="pm-credits" />
+                        <Label htmlFor="pm-credits" className="flex items-center gap-2 cursor-pointer flex-1">
+                          <Clock className="w-4 h-4 text-primary" />
+                          <div>
+                            <span className="text-sm font-medium">Time Credits</span>
+                            <p className="text-xs text-muted-foreground">Pay/receive in platform credits</p>
+                          </div>
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-2 p-2 rounded-lg border border-border hover:bg-muted/50">
+                        <RadioGroupItem value="stripe" id="pm-stripe" />
+                        <Label htmlFor="pm-stripe" className="flex items-center gap-2 cursor-pointer flex-1">
+                          <DollarSign className="w-4 h-4 text-green-500" />
+                          <div>
+                            <span className="text-sm font-medium">Direct Payment (Stripe)</span>
+                            <p className="text-xs text-muted-foreground">Pay/receive in USD via Stripe</p>
+                          </div>
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-2 p-2 rounded-lg border border-border hover:bg-muted/50">
+                        <RadioGroupItem value="both" id="pm-both" />
+                        <Label htmlFor="pm-both" className="flex items-center gap-2 cursor-pointer flex-1">
+                          <CreditCard className="w-4 h-4 text-accent" />
+                          <div>
+                            <span className="text-sm font-medium">Both (Credits preferred)</span>
+                            <p className="text-xs text-muted-foreground">Accept credits or Stripe payments</p>
+                          </div>
+                        </Label>
+                      </div>
+                    </RadioGroup>
                   </div>
                   <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
                     <div className="flex items-center gap-2">
