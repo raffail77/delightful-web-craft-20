@@ -52,6 +52,7 @@ const MessagingDialog = ({
   hourlyCredits,
   serviceType,
   serviceOwnerId,
+  servicePaymentMethod,
 }: MessagingDialogProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -340,7 +341,7 @@ const MessagingDialog = ({
         suggestedCredits={hourlyCredits}
         serviceType={serviceType}
         serviceOwnerId={serviceOwnerId}
-        servicePaymentMethod={(props as any).servicePaymentMethod}
+        servicePaymentMethod={servicePaymentMethod}
       />
     </>
   );
