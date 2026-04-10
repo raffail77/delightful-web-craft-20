@@ -146,6 +146,11 @@ const ContractCard = ({ contract, onAction }: ContractCardProps) => {
             )}
           </div>
 
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-muted-foreground">Agreed price:</span>
+            <span className="font-semibold text-primary">{contract.agreed_credits} credits</span>
+          </div>
+
           <div className="text-xs text-muted-foreground">
             Created {format(new Date(contract.created_at), "MMM d, yyyy")}
           </div>
