@@ -39,6 +39,7 @@ interface MessagingDialogProps {
   hourlyCredits?: number;
   serviceType?: "offer" | "request";
   serviceOwnerId?: string;
+  servicePaymentMethod?: "credits" | "stripe" | "both";
 }
 
 const MessagingDialog = ({
@@ -339,6 +340,7 @@ const MessagingDialog = ({
         suggestedCredits={hourlyCredits}
         serviceType={serviceType}
         serviceOwnerId={serviceOwnerId}
+        servicePaymentMethod={(props as any).servicePaymentMethod}
       />
     </>
   );
