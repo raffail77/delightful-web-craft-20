@@ -27,6 +27,7 @@ interface ContractProposalDialogProps {
   suggestedCredits?: number;
   serviceType?: "offer" | "request";
   serviceOwnerId?: string;
+  servicePaymentMethod?: "credits" | "stripe" | "both";
   onSuccess?: () => void;
 }
 
@@ -40,6 +41,7 @@ const ContractProposalDialog = ({
   suggestedCredits,
   serviceType,
   serviceOwnerId,
+  servicePaymentMethod,
   onSuccess,
 }: ContractProposalDialogProps) => {
   const { user } = useAuth();
@@ -96,6 +98,8 @@ const ContractProposalDialog = ({
       clientId = user.id;
     }
 
+    const paymentMethod = servicePaymentMethod || "credits";
+
     const { error: insertError } = await supabase.from("contracts").insert({
       service_id: serviceId || null,
       provider_id: providerId,
@@ -105,7 +109,8 @@ const ContractProposalDialog = ({
       description: description.trim(),
       agreed_credits: numCredits,
       status: "proposed",
-    });
+      payment_method: paymentMethod,
+    } as any);
 
     setSending(false);
 
