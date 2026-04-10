@@ -58,12 +58,16 @@ export type Database = {
           completed_at: string | null
           created_at: string
           description: string
+          escrow_locked: boolean
+          escrow_locked_at: string | null
           id: string
+          payment_method: Database["public"]["Enums"]["payment_method"]
           proposed_by: string
           provider_confirmed: boolean
           provider_id: string
           service_id: string | null
           status: Database["public"]["Enums"]["contract_status"]
+          stripe_payment_intent_id: string | null
           title: string
           transaction_id: string | null
           updated_at: string
@@ -75,12 +79,16 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           description: string
+          escrow_locked?: boolean
+          escrow_locked_at?: string | null
           id?: string
+          payment_method?: Database["public"]["Enums"]["payment_method"]
           proposed_by: string
           provider_confirmed?: boolean
           provider_id: string
           service_id?: string | null
           status?: Database["public"]["Enums"]["contract_status"]
+          stripe_payment_intent_id?: string | null
           title: string
           transaction_id?: string | null
           updated_at?: string
@@ -92,12 +100,16 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           description?: string
+          escrow_locked?: boolean
+          escrow_locked_at?: string | null
           id?: string
+          payment_method?: Database["public"]["Enums"]["payment_method"]
           proposed_by?: string
           provider_confirmed?: boolean
           provider_id?: string
           service_id?: string | null
           status?: Database["public"]["Enums"]["contract_status"]
+          stripe_payment_intent_id?: string | null
           title?: string
           transaction_id?: string | null
           updated_at?: string
@@ -576,6 +588,7 @@ export type Database = {
           is_active: boolean
           is_remote: boolean
           location: string | null
+          payment_method: Database["public"]["Enums"]["payment_method"]
           service_type: Database["public"]["Enums"]["service_type"]
           title: string
           updated_at: string
@@ -591,6 +604,7 @@ export type Database = {
           is_active?: boolean
           is_remote?: boolean
           location?: string | null
+          payment_method?: Database["public"]["Enums"]["payment_method"]
           service_type: Database["public"]["Enums"]["service_type"]
           title: string
           updated_at?: string
@@ -606,6 +620,7 @@ export type Database = {
           is_active?: boolean
           is_remote?: boolean
           location?: string | null
+          payment_method?: Database["public"]["Enums"]["payment_method"]
           service_type?: Database["public"]["Enums"]["service_type"]
           title?: string
           updated_at?: string
@@ -869,6 +884,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_contract_with_escrow: {
+        Args: { p_contract_id: string; p_user_id: string }
+        Returns: Json
+      }
+      cancel_contract_with_escrow: {
+        Args: { p_contract_id: string; p_user_id: string }
+        Returns: Json
+      }
       complete_contract: {
         Args: { p_contract_id: string; p_user_id: string }
         Returns: Json
@@ -900,6 +923,7 @@ export type Database = {
         | "completed"
         | "disputed"
         | "cancelled"
+      payment_method: "credits" | "stripe" | "both"
       professional_category:
         | "web_developer"
         | "software_engineer"
@@ -1053,6 +1077,7 @@ export const Constants = {
         "disputed",
         "cancelled",
       ],
+      payment_method: ["credits", "stripe", "both"],
       professional_category: [
         "web_developer",
         "software_engineer",

@@ -39,6 +39,7 @@ interface MessagingDialogProps {
   hourlyCredits?: number;
   serviceType?: "offer" | "request";
   serviceOwnerId?: string;
+  servicePaymentMethod?: "credits" | "stripe" | "both";
 }
 
 const MessagingDialog = ({
@@ -51,6 +52,7 @@ const MessagingDialog = ({
   hourlyCredits,
   serviceType,
   serviceOwnerId,
+  servicePaymentMethod,
 }: MessagingDialogProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -339,6 +341,7 @@ const MessagingDialog = ({
         suggestedCredits={hourlyCredits}
         serviceType={serviceType}
         serviceOwnerId={serviceOwnerId}
+        servicePaymentMethod={servicePaymentMethod}
       />
     </>
   );

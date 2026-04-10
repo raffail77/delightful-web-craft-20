@@ -52,7 +52,10 @@ import {
   ArrowRight,
   ImagePlus,
   X,
+  CreditCard,
+  DollarSign,
 } from "lucide-react";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import type { Database } from "@/integrations/supabase/types";
 import MessagingDialog from "@/components/MessagingDialog";
 
@@ -99,7 +102,7 @@ const Marketplace = () => {
   // Messaging state
   const [messagingOpen, setMessagingOpen] = useState(false);
   const [messagingReceiver, setMessagingReceiver] = useState({ id: "", name: "" });
-  const [messagingService, setMessagingService] = useState<{ id: string; title: string; serviceType?: "offer" | "request"; serviceOwnerId?: string }>({ id: "", title: "" });
+  const [messagingService, setMessagingService] = useState<{ id: string; title: string; serviceType?: "offer" | "request"; serviceOwnerId?: string; paymentMethod?: "credits" | "stripe" | "both" }>({ id: "", title: "" });
 
   // Form state
   const [title, setTitle] = useState("");
@@ -112,6 +115,7 @@ const Marketplace = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<"credits" | "stripe" | "both">("credits");
 
   const handleContactProvider = (
     receiverId: string,
@@ -119,7 +123,8 @@ const Marketplace = () => {
     serviceId: string,
     serviceTitle: string,
     svcType: "offer" | "request",
-    serviceOwnerId: string
+    serviceOwnerId: string,
+    paymentMethod?: "credits" | "stripe" | "both"
   ) => {
     if (!user) {
       toast({ title: "Sign in required", description: "Please sign in to contact this user" });
@@ -127,7 +132,7 @@ const Marketplace = () => {
       return;
     }
     setMessagingReceiver({ id: receiverId, name: receiverName });
-    setMessagingService({ id: serviceId, title: serviceTitle, serviceType: svcType, serviceOwnerId });
+    setMessagingService({ id: serviceId, title: serviceTitle, serviceType: svcType, serviceOwnerId, paymentMethod });
     setMessagingOpen(true);
   };
 
@@ -269,6 +274,7 @@ const Marketplace = () => {
       location: location || null,
       is_remote: isRemote,
       image_url: imageUrl,
+      payment_method: paymentMethod,
     } as any);
     setIsSubmitting(false);
     if (error) {
@@ -290,6 +296,7 @@ const Marketplace = () => {
     setIsRemote(true);
     setImageFile(null);
     setImagePreview(null);
+    setPaymentMethod("credits");
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -421,6 +428,42 @@ const Marketplace = () => {
                       <Label htmlFor="location">Location (optional)</Label>
                       <Input id="location" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="City, State" />
                     </div>
+                   </div>
+                  {/* Payment Method */}
+                  <div className="space-y-2">
+                    <Label>Payment Method</Label>
+                    <RadioGroup value={paymentMethod} onValueChange={(v) => setPaymentMethod(v as "credits" | "stripe" | "both")} className="space-y-2">
+                      <div className="flex items-center space-x-2 p-2 rounded-lg border border-border hover:bg-muted/50">
+                        <RadioGroupItem value="credits" id="pm-credits" />
+                        <Label htmlFor="pm-credits" className="flex items-center gap-2 cursor-pointer flex-1">
+                          <Clock className="w-4 h-4 text-primary" />
+                          <div>
+                            <span className="text-sm font-medium">Time Credits</span>
+                            <p className="text-xs text-muted-foreground">Pay/receive in platform credits</p>
+                          </div>
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-2 p-2 rounded-lg border border-border hover:bg-muted/50">
+                        <RadioGroupItem value="stripe" id="pm-stripe" />
+                        <Label htmlFor="pm-stripe" className="flex items-center gap-2 cursor-pointer flex-1">
+                          <DollarSign className="w-4 h-4 text-green-500" />
+                          <div>
+                            <span className="text-sm font-medium">Direct Payment (Stripe)</span>
+                            <p className="text-xs text-muted-foreground">Pay/receive in USD via Stripe</p>
+                          </div>
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-2 p-2 rounded-lg border border-border hover:bg-muted/50">
+                        <RadioGroupItem value="both" id="pm-both" />
+                        <Label htmlFor="pm-both" className="flex items-center gap-2 cursor-pointer flex-1">
+                          <CreditCard className="w-4 h-4 text-accent" />
+                          <div>
+                            <span className="text-sm font-medium">Both (Credits preferred)</span>
+                            <p className="text-xs text-muted-foreground">Accept credits or Stripe payments</p>
+                          </div>
+                        </Label>
+                      </div>
+                    </RadioGroup>
                   </div>
                   <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
                     <div className="flex items-center gap-2">
@@ -530,6 +573,7 @@ const Marketplace = () => {
         serviceTitle={messagingService.title}
         serviceType={messagingService.serviceType}
         serviceOwnerId={messagingService.serviceOwnerId}
+        servicePaymentMethod={messagingService.paymentMethod}
       />
 
       <Footer />
@@ -547,7 +591,7 @@ const ServiceCard = ({
 }: {
   service: Service;
   currentUserId?: string;
-  onContact: (receiverId: string, receiverName: string, serviceId: string, serviceTitle: string, serviceType: "offer" | "request", serviceOwnerId: string) => void;
+  onContact: (receiverId: string, receiverName: string, serviceId: string, serviceTitle: string, serviceType: "offer" | "request", serviceOwnerId: string, paymentMethod?: "credits" | "stripe" | "both") => void;
   onDelete: (serviceId: string) => void;
 }) => {
   const navigate = useNavigate();
@@ -647,6 +691,19 @@ const ServiceCard = ({
           <Badge variant="outline" className="text-[10px] px-2 py-0.5">{service.category}</Badge>
         </div>
 
+        {/* Payment method badge */}
+        <div className="flex items-center gap-1">
+          {(service as any).payment_method === "stripe" && (
+            <Badge variant="outline" className="text-[10px] px-2 py-0.5"><DollarSign className="w-3 h-3 mr-0.5" />Stripe</Badge>
+          )}
+          {(service as any).payment_method === "both" && (
+            <Badge variant="outline" className="text-[10px] px-2 py-0.5"><CreditCard className="w-3 h-3 mr-0.5" />Credits + Stripe</Badge>
+          )}
+          {((service as any).payment_method === "credits" || !(service as any).payment_method) && (
+            <Badge variant="outline" className="text-[10px] px-2 py-0.5"><Clock className="w-3 h-3 mr-0.5" />Credits</Badge>
+          )}
+        </div>
+
         {/* Meta: credits + location */}
         <div className="flex items-center justify-between pt-2 border-t border-border">
           <div className="flex items-center gap-1 text-muted-foreground text-xs">
@@ -674,7 +731,7 @@ const ServiceCard = ({
             className="w-full gap-2 mt-1"
             onClick={(e) => {
               e.stopPropagation();
-              onContact(service.user_id, service.profiles?.full_name || "User", service.id, service.title, service.service_type, service.user_id);
+              onContact(service.user_id, service.profiles?.full_name || "User", service.id, service.title, service.service_type, service.user_id, (service as any).payment_method);
             }}
           >
             <MessageCircle className="w-4 h-4" />

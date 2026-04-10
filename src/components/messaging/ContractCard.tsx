@@ -14,7 +14,9 @@ import {
   Clock,
   AlertTriangle,
   CreditCard,
-  Star
+  Star,
+  DollarSign,
+  Lock
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { ReviewDialog } from "@/components/profile/ReviewDialog";
@@ -127,11 +129,21 @@ const ContractCard = ({ contract, onAction }: ContractCardProps) => {
             {contract.description}
           </p>
 
-          {/* Role indicator */}
-          <div className="flex items-center gap-2">
+          {/* Role and payment method indicators */}
+          <div className="flex items-center gap-2 flex-wrap">
             <Badge variant="outline" className="text-xs">
               {isProvider ? "You are the Provider" : "You are the Client"}
             </Badge>
+            <Badge variant="outline" className="text-xs">
+              {contract.payment_method === "credits" && <><Clock className="w-3 h-3 mr-1" />Credits</>}
+              {contract.payment_method === "stripe" && <><DollarSign className="w-3 h-3 mr-1" />Stripe</>}
+              {contract.payment_method === "both" && <><CreditCard className="w-3 h-3 mr-1" />Credits (preferred)</>}
+            </Badge>
+            {contract.escrow_locked && (
+              <Badge variant="secondary" className="text-xs">
+                <Lock className="w-3 h-3 mr-1" />Escrow
+              </Badge>
+            )}
           </div>
 
           <div className="flex items-center justify-between text-xs">
