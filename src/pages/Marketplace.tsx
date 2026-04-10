@@ -591,7 +591,7 @@ const ServiceCard = ({
 }: {
   service: Service;
   currentUserId?: string;
-  onContact: (receiverId: string, receiverName: string, serviceId: string, serviceTitle: string, serviceType: "offer" | "request", serviceOwnerId: string) => void;
+  onContact: (receiverId: string, receiverName: string, serviceId: string, serviceTitle: string, serviceType: "offer" | "request", serviceOwnerId: string, paymentMethod?: "credits" | "stripe" | "both") => void;
   onDelete: (serviceId: string) => void;
 }) => {
   const navigate = useNavigate();
@@ -691,6 +691,19 @@ const ServiceCard = ({
           <Badge variant="outline" className="text-[10px] px-2 py-0.5">{service.category}</Badge>
         </div>
 
+        {/* Payment method badge */}
+        <div className="flex items-center gap-1">
+          {(service as any).payment_method === "stripe" && (
+            <Badge variant="outline" className="text-[10px] px-2 py-0.5"><DollarSign className="w-3 h-3 mr-0.5" />Stripe</Badge>
+          )}
+          {(service as any).payment_method === "both" && (
+            <Badge variant="outline" className="text-[10px] px-2 py-0.5"><CreditCard className="w-3 h-3 mr-0.5" />Credits + Stripe</Badge>
+          )}
+          {((service as any).payment_method === "credits" || !(service as any).payment_method) && (
+            <Badge variant="outline" className="text-[10px] px-2 py-0.5"><Clock className="w-3 h-3 mr-0.5" />Credits</Badge>
+          )}
+        </div>
+
         {/* Meta: credits + location */}
         <div className="flex items-center justify-between pt-2 border-t border-border">
           <div className="flex items-center gap-1 text-muted-foreground text-xs">
@@ -718,7 +731,7 @@ const ServiceCard = ({
             className="w-full gap-2 mt-1"
             onClick={(e) => {
               e.stopPropagation();
-              onContact(service.user_id, service.profiles?.full_name || "User", service.id, service.title, service.service_type, service.user_id);
+              onContact(service.user_id, service.profiles?.full_name || "User", service.id, service.title, service.service_type, service.user_id, (service as any).payment_method);
             }}
           >
             <MessageCircle className="w-4 h-4" />
