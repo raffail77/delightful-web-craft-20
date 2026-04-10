@@ -5,6 +5,8 @@ import { useToast } from "@/hooks/use-toast";
 
 export type ContractStatus = "proposed" | "accepted" | "in_progress" | "completed" | "disputed" | "cancelled";
 
+export type PaymentMethod = "credits" | "stripe" | "both";
+
 export interface Contract {
   id: string;
   service_id: string | null;
@@ -18,6 +20,10 @@ export interface Contract {
   provider_confirmed: boolean;
   client_confirmed: boolean;
   transaction_id: string | null;
+  payment_method: PaymentMethod;
+  escrow_locked: boolean;
+  escrow_locked_at: string | null;
+  stripe_payment_intent_id: string | null;
   created_at: string;
   updated_at: string;
   completed_at: string | null;
@@ -94,27 +100,30 @@ export function useContracts(otherUserId?: string) {
   const acceptContract = async (contractId: string) => {
     if (!user) return { success: false };
 
-    const { error } = await supabase
-      .from("contracts")
-      .update({ status: "accepted" })
-      .eq("id", contractId)
-      .neq("proposed_by", user.id); // Only the other party can accept
+    const { data, error } = await supabase.rpc('accept_contract_with_escrow', {
+      p_contract_id: contractId,
+      p_user_id: user.id,
+    });
 
     if (error) {
       console.error("Error accepting contract:", error);
       toast({
         title: "Error",
-        description: "Failed to accept contract",
+        description: error.message || "Failed to accept contract",
         variant: "destructive",
       });
       return { success: false };
     }
 
+    const result = data as { escrow_locked?: boolean; message?: string } | null;
     toast({
       title: "Contract Accepted",
-      description: "The contract has been accepted. Service can now begin.",
+      description: result?.escrow_locked
+        ? "Credits have been locked in escrow. Service can now begin."
+        : "The contract has been accepted. Service can now begin.",
     });
 
+    await fetchContracts();
     return { success: true };
   };
 
@@ -183,16 +192,18 @@ export function useContracts(otherUserId?: string) {
   };
 
   const cancelContract = async (contractId: string) => {
-    const { error } = await supabase
-      .from("contracts")
-      .update({ status: "cancelled" })
-      .eq("id", contractId);
+    if (!user) return { success: false };
+
+    const { data, error } = await supabase.rpc('cancel_contract_with_escrow', {
+      p_contract_id: contractId,
+      p_user_id: user.id,
+    });
 
     if (error) {
       console.error("Error cancelling contract:", error);
       toast({
         title: "Error",
-        description: "Failed to cancel contract",
+        description: error.message || "Failed to cancel contract",
         variant: "destructive",
       });
       return { success: false };
@@ -200,9 +211,10 @@ export function useContracts(otherUserId?: string) {
 
     toast({
       title: "Contract Cancelled",
-      description: "The contract has been cancelled",
+      description: "The contract has been cancelled and any escrowed credits have been refunded.",
     });
 
+    await fetchContracts();
     return { success: true };
   };
 
