@@ -888,6 +888,7 @@ export type Database = {
         Args: { p_contract_id: string; p_user_id: string }
         Returns: Json
       }
+      auto_cancel_unpaid_contracts: { Args: never; Returns: number }
       cancel_contract_with_escrow: {
         Args: { p_contract_id: string; p_user_id: string }
         Returns: Json
@@ -902,6 +903,14 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      pay_contract_stripe: {
+        Args: {
+          p_contract_id: string
+          p_payment_intent_id: string
+          p_user_id: string
+        }
+        Returns: Json
       }
       transfer_credits: {
         Args: {
@@ -918,6 +927,7 @@ export type Database = {
       app_role: "admin" | "moderator" | "user"
       contract_status:
         | "proposed"
+        | "pending_payment"
         | "accepted"
         | "in_progress"
         | "completed"
@@ -1071,6 +1081,7 @@ export const Constants = {
       app_role: ["admin", "moderator", "user"],
       contract_status: [
         "proposed",
+        "pending_payment",
         "accepted",
         "in_progress",
         "completed",
