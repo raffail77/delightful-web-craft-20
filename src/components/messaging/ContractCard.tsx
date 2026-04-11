@@ -66,6 +66,8 @@ const ContractCard = ({ contract, onAction }: ContractCardProps) => {
     fetchName();
   }, [revieweeId]);
 
+  if (!user) return null;
+
   const handleAccept = async () => { await acceptContract(contract.id); onAction?.(); };
   const handleStart = async () => { await startContract(contract.id); onAction?.(); };
   const handleConfirm = async () => { await confirmCompletion(contract); onAction?.(); };
