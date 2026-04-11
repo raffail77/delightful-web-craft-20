@@ -22,7 +22,33 @@ const statusTabs: { value: string; label: string; icon: React.ElementType; statu
 
 const Contracts = () => {
   const { contracts, isLoading, refreshContracts } = useContracts();
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("all");
+
+  // Verify Stripe payment on return from checkout
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const payment = params.get("payment");
+    const contractId = params.get("contract");
+
+    if (payment === "success" && contractId) {
+      supabase.functions.invoke("verify-contract-payment", {
+        body: { contract_id: contractId },
+      }).then(({ data, error }) => {
+        if (error) {
+          console.error("Payment verification error:", error);
+        } else if (data?.activated) {
+          toast({ title: "Payment Confirmed", description: "Your contract is now active!" });
+          refreshContracts();
+        }
+      });
+      // Clean URL
+      window.history.replaceState({}, "", window.location.pathname);
+    } else if (payment === "cancelled") {
+      toast({ title: "Payment Cancelled", description: "You can pay later from the contract card.", variant: "destructive" });
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  }, []);
 
   const filteredContracts = contracts.filter((contract) => {
     if (activeTab === "all") return true;
