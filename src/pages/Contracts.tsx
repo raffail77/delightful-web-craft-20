@@ -50,6 +50,27 @@ const Contracts = () => {
     }
   }, []);
 
+  // Re-verify pending_payment contracts when tab becomes visible (returning from Stripe)
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        const pendingContracts = contracts.filter(c => c.status === "pending_payment" && c.stripe_payment_intent_id);
+        pendingContracts.forEach(c => {
+          supabase.functions.invoke("verify-contract-payment", {
+            body: { contract_id: c.id },
+          }).then(({ data }) => {
+            if (data?.activated) {
+              toast({ title: "Payment Confirmed", description: `Contract "${c.title}" is now active!` });
+              refreshContracts();
+            }
+          });
+        });
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
+  }, [contracts]);
+
   const filteredContracts = contracts.filter((contract) => {
     if (activeTab === "all") return true;
     const tab = statusTabs.find((t) => t.value === activeTab);
