@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useContracts, ContractStatus } from "@/hooks/useContracts";
 import ContractCard from "@/components/messaging/ContractCard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -7,11 +7,14 @@ import { Badge } from "@/components/ui/badge";
 import { FileText, Clock, CheckCircle2, Play, AlertTriangle, X } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/sections/Footer";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 const statusTabs: { value: string; label: string; icon: React.ElementType; statuses: ContractStatus[] }[] = [
   { value: "all", label: "All", icon: FileText, statuses: [] },
-  { value: "active", label: "Active", icon: Play, statuses: ["proposed", "accepted", "in_progress"] },
+  { value: "active", label: "Active", icon: Play, statuses: ["proposed", "pending_payment", "accepted", "in_progress"] },
   { value: "proposed", label: "Proposed", icon: Clock, statuses: ["proposed"] },
+  { value: "pending_payment", label: "Awaiting Payment", icon: Clock, statuses: ["pending_payment"] },
   { value: "in_progress", label: "In Progress", icon: Play, statuses: ["in_progress"] },
   { value: "completed", label: "Completed", icon: CheckCircle2, statuses: ["completed"] },
   { value: "cancelled", label: "Cancelled", icon: X, statuses: ["cancelled"] },
@@ -19,7 +22,54 @@ const statusTabs: { value: string; label: string; icon: React.ElementType; statu
 
 const Contracts = () => {
   const { contracts, isLoading, refreshContracts } = useContracts();
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("all");
+
+  // Verify Stripe payment on return from checkout
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const payment = params.get("payment");
+    const contractId = params.get("contract");
+
+    if (payment === "success" && contractId) {
+      supabase.functions.invoke("verify-contract-payment", {
+        body: { contract_id: contractId },
+      }).then(({ data, error }) => {
+        if (error) {
+          console.error("Payment verification error:", error);
+        } else if (data?.activated) {
+          toast({ title: "Payment Confirmed", description: "Your contract is now active!" });
+          refreshContracts();
+        }
+      });
+      // Clean URL
+      window.history.replaceState({}, "", window.location.pathname);
+    } else if (payment === "cancelled") {
+      toast({ title: "Payment Cancelled", description: "You can pay later from the contract card.", variant: "destructive" });
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  }, []);
+
+  // Re-verify pending_payment contracts when tab becomes visible (returning from Stripe)
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        const pendingContracts = contracts.filter(c => c.status === "pending_payment" && c.stripe_payment_intent_id);
+        pendingContracts.forEach(c => {
+          supabase.functions.invoke("verify-contract-payment", {
+            body: { contract_id: c.id },
+          }).then(({ data }) => {
+            if (data?.activated) {
+              toast({ title: "Payment Confirmed", description: `Contract "${c.title}" is now active!` });
+              refreshContracts();
+            }
+          });
+        });
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
+  }, [contracts]);
 
   const filteredContracts = contracts.filter((contract) => {
     if (activeTab === "all") return true;

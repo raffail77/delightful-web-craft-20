@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 
-export type ContractStatus = "proposed" | "accepted" | "in_progress" | "completed" | "disputed" | "cancelled";
+export type ContractStatus = "proposed" | "pending_payment" | "accepted" | "in_progress" | "completed" | "disputed" | "cancelled";
 
 export type PaymentMethod = "credits" | "stripe" | "both";
 
@@ -39,31 +39,21 @@ export function useContracts(otherUserId?: string) {
     if (user) {
       fetchContracts();
 
-      // Subscribe to realtime updates
       const channel = supabase
         .channel("contracts-updates")
         .on(
           "postgres_changes",
-          {
-            event: "*",
-            schema: "public",
-            table: "contracts",
-          },
+          { event: "*", schema: "public", table: "contracts" },
           (payload) => {
             const contract = payload.new as Contract;
-            if (
-              contract &&
-              (contract.provider_id === user.id || contract.client_id === user.id)
-            ) {
+            if (contract && (contract.provider_id === user.id || contract.client_id === user.id)) {
               fetchContracts();
             }
           }
         )
         .subscribe();
 
-      return () => {
-        supabase.removeChannel(channel);
-      };
+      return () => { supabase.removeChannel(channel); };
     }
   }, [user, otherUserId]);
 
@@ -76,7 +66,6 @@ export function useContracts(otherUserId?: string) {
       .or(`provider_id.eq.${user.id},client_id.eq.${user.id}`)
       .order("created_at", { ascending: false });
 
-    // Filter by other user if provided
     if (otherUserId) {
       query = supabase
         .from("contracts")
@@ -115,16 +104,57 @@ export function useContracts(otherUserId?: string) {
       return { success: false };
     }
 
-    const result = data as { escrow_locked?: boolean; message?: string } | null;
-    toast({
-      title: "Contract Accepted",
-      description: result?.escrow_locked
-        ? "Credits have been locked in escrow. Service can now begin."
-        : "The contract has been accepted. Service can now begin.",
-    });
+    const result = data as { escrow_locked?: boolean; message?: string; requires_payment?: boolean } | null;
+    
+    if (result?.requires_payment) {
+      toast({
+        title: "Contract Accepted — Payment Required",
+        description: "The client must complete Stripe payment before service can begin.",
+      });
+    } else {
+      toast({
+        title: "Contract Accepted",
+        description: result?.escrow_locked
+          ? "Credits have been locked in escrow. Service can now begin."
+          : "The contract has been accepted.",
+      });
+    }
 
     await fetchContracts();
-    return { success: true };
+    return { success: true, requiresPayment: result?.requires_payment };
+  };
+
+  const payContractStripe = async (contractId: string) => {
+    if (!user) return { success: false };
+
+    try {
+      const response = await supabase.functions.invoke("contract-stripe-payment", {
+        body: { contract_id: contractId },
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message || "Payment failed");
+      }
+
+      if (response.data?.url) {
+        window.open(response.data.url, "_blank");
+        toast({
+          title: "Stripe Checkout Opened",
+          description: "Complete your payment in the new tab. The contract will be activated once payment is confirmed.",
+        });
+        return { success: true };
+      }
+
+      throw new Error("No checkout URL received");
+    } catch (error: any) {
+      console.error("Stripe payment error:", error);
+      toast({
+        title: "Payment Error",
+        description: error.message || "Could not initiate payment",
+        variant: "destructive",
+      });
+      return { success: false };
+    }
   };
 
   const startContract = async (contractId: string) => {
@@ -135,26 +165,17 @@ export function useContracts(otherUserId?: string) {
 
     if (error) {
       console.error("Error starting contract:", error);
-      toast({
-        title: "Error",
-        description: "Failed to start contract",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: "Failed to start contract", variant: "destructive" });
       return { success: false };
     }
 
-    toast({
-      title: "Contract Started",
-      description: "The service is now in progress.",
-    });
-
+    toast({ title: "Contract Started", description: "The service is now in progress." });
     return { success: true };
   };
 
   const confirmCompletion = async (contract: Contract) => {
     if (!user) return { success: false };
 
-    // Use server-side atomic function to handle confirmation and payment
     const { data, error } = await supabase.rpc('complete_contract', {
       p_contract_id: contract.id,
       p_user_id: user.id
@@ -162,15 +183,10 @@ export function useContracts(otherUserId?: string) {
 
     if (error) {
       console.error("Error confirming completion:", error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to confirm completion",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: error.message || "Failed to confirm completion", variant: "destructive" });
       return { success: false };
     }
 
-    // Cast and handle response from server
     const result = data as { completed?: boolean; message?: string } | null;
     
     if (result?.completed) {
@@ -185,9 +201,7 @@ export function useContracts(otherUserId?: string) {
       });
     }
 
-    // Refresh contracts to update UI
     await fetchContracts();
-
     return { success: true };
   };
 
@@ -201,17 +215,13 @@ export function useContracts(otherUserId?: string) {
 
     if (error) {
       console.error("Error cancelling contract:", error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to cancel contract",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: error.message || "Failed to cancel contract", variant: "destructive" });
       return { success: false };
     }
 
     toast({
       title: "Contract Cancelled",
-      description: "The contract has been cancelled and any escrowed credits have been refunded.",
+      description: "The contract has been cancelled and any escrowed funds have been refunded.",
     });
 
     await fetchContracts();
@@ -222,6 +232,7 @@ export function useContracts(otherUserId?: string) {
     contracts,
     isLoading,
     acceptContract,
+    payContractStripe,
     startContract,
     confirmCompletion,
     cancelContract,

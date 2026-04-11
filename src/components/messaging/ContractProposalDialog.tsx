@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { useCredits } from "@/hooks/useCredits";
 import {
   Dialog,
   DialogContent,
@@ -14,7 +15,8 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { FileText, AlertCircle } from "lucide-react";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { FileText, AlertCircle, CreditCard, DollarSign } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface ContractProposalDialogProps {
@@ -46,16 +48,37 @@ const ContractProposalDialog = ({
 }: ContractProposalDialogProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { credits } = useCredits();
   const [title, setTitle] = useState(serviceTitle || "");
   const [description, setDescription] = useState("");
-  const [credits, setCredits] = useState<string>(suggestedCredits?.toString() || "");
+  const [creditsAmount, setCreditsAmount] = useState<string>(suggestedCredits?.toString() || "");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<"credits" | "stripe">(
+    servicePaymentMethod === "stripe" ? "stripe" : "credits"
+  );
+
+  // Reset payment method when service payment method changes
+  useEffect(() => {
+    if (servicePaymentMethod === "stripe") {
+      setSelectedPaymentMethod("stripe");
+    } else if (servicePaymentMethod === "credits") {
+      setSelectedPaymentMethod("credits");
+    } else {
+      setSelectedPaymentMethod("credits");
+    }
+  }, [servicePaymentMethod]);
+
+  const effectivePaymentMethod = servicePaymentMethod || "credits";
+  const canChoosePayment = effectivePaymentMethod === "both";
+
+  // Determine the final payment method for the contract
+  const finalPaymentMethod = canChoosePayment ? selectedPaymentMethod : effectivePaymentMethod;
 
   const handlePropose = async () => {
     if (!user) return;
 
-    const numCredits = parseInt(credits);
+    const numCredits = parseInt(creditsAmount);
     
     if (!title.trim()) {
       setError("Please enter a title");
@@ -72,33 +95,41 @@ const ContractProposalDialog = ({
       return;
     }
 
+    // For credit-based payments, check if the client has enough credits
+    if (finalPaymentMethod === "credits") {
+      let clientId: string;
+      if (serviceType && serviceOwnerId) {
+        clientId = serviceType === "offer"
+          ? (serviceOwnerId === user.id ? receiverId : user.id)
+          : serviceOwnerId;
+      } else {
+        clientId = user.id;
+      }
+
+      if (clientId === user.id && credits < numCredits) {
+        setError(`Insufficient credits. You have ${credits} credits but need ${numCredits}. Please earn or purchase more credits.`);
+        return;
+      }
+    }
+
     setSending(true);
     setError(null);
 
-    // Determine provider and client based on service type:
-    // - Offering service: service owner = provider, other user = client
-    // - Requesting service: service owner = client, other user = provider
-    // If no service type, the proposer becomes the client (requesting work)
     let providerId: string;
     let clientId: string;
 
     if (serviceType && serviceOwnerId) {
       if (serviceType === "offer") {
-        // Service owner is offering work, so they are the provider
         providerId = serviceOwnerId;
         clientId = serviceOwnerId === user.id ? receiverId : user.id;
       } else {
-        // Service owner is requesting work, so they are the client
         clientId = serviceOwnerId;
         providerId = serviceOwnerId === user.id ? receiverId : user.id;
       }
     } else {
-      // Fallback: proposer is the client (requesting work from receiver)
       providerId = receiverId;
       clientId = user.id;
     }
-
-    const paymentMethod = servicePaymentMethod || "credits";
 
     const { error: insertError } = await supabase.from("contracts").insert({
       service_id: serviceId || null,
@@ -109,7 +140,7 @@ const ContractProposalDialog = ({
       description: description.trim(),
       agreed_credits: numCredits,
       status: "proposed",
-      payment_method: paymentMethod,
+      payment_method: finalPaymentMethod,
     } as any);
 
     setSending(false);
@@ -125,10 +156,9 @@ const ContractProposalDialog = ({
       description: `Your contract proposal has been sent to ${receiverName}`,
     });
 
-    // Reset form
     setTitle(serviceTitle || "");
     setDescription("");
-    setCredits(suggestedCredits?.toString() || "");
+    setCreditsAmount(suggestedCredits?.toString() || "");
     onOpenChange(false);
     onSuccess?.();
   };
@@ -178,28 +208,94 @@ const ContractProposalDialog = ({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="credits">Agreed Credits</Label>
+            <Label htmlFor="credits">
+              {finalPaymentMethod === "stripe" ? "Agreed Amount (in credits equivalent)" : "Agreed Credits"}
+            </Label>
             <Input
               id="credits"
               type="number"
               min="1"
               placeholder="Number of credits"
-              value={credits}
-              onChange={(e) => setCredits(e.target.value)}
+              value={creditsAmount}
+              onChange={(e) => setCreditsAmount(e.target.value)}
               disabled={sending}
             />
-            <p className="text-xs text-muted-foreground">
-              Credits will be transferred when both parties confirm completion
-            </p>
+            {finalPaymentMethod === "credits" && (
+              <p className="text-xs text-muted-foreground">
+                Your balance: <span className="font-semibold">{credits} credits</span>. Credits will be locked in escrow when the contract is accepted.
+              </p>
+            )}
+            {finalPaymentMethod === "stripe" && (
+              <p className="text-xs text-muted-foreground">
+                Payment will be processed via Stripe. The amount will be held in escrow until service completion.
+              </p>
+            )}
           </div>
+
+          {/* Payment method selection - only shown when service supports both */}
+          {canChoosePayment && (
+            <div className="space-y-2">
+              <Label>Payment Method</Label>
+              <RadioGroup
+                value={selectedPaymentMethod}
+                onValueChange={(val) => setSelectedPaymentMethod(val as "credits" | "stripe")}
+                disabled={sending}
+              >
+                <div className="flex items-center space-x-2 p-2 rounded-md border border-border hover:bg-muted/50">
+                  <RadioGroupItem value="credits" id="pm-credits" />
+                  <Label htmlFor="pm-credits" className="flex items-center gap-2 cursor-pointer flex-1">
+                    <CreditCard className="w-4 h-4 text-primary" />
+                    <div>
+                      <p className="text-sm font-medium">Time Credits</p>
+                      <p className="text-xs text-muted-foreground">Pay with your credit balance</p>
+                    </div>
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2 p-2 rounded-md border border-border hover:bg-muted/50">
+                  <RadioGroupItem value="stripe" id="pm-stripe" />
+                  <Label htmlFor="pm-stripe" className="flex items-center gap-2 cursor-pointer flex-1">
+                    <DollarSign className="w-4 h-4 text-green-600" />
+                    <div>
+                      <p className="text-sm font-medium">Stripe (Cash)</p>
+                      <p className="text-xs text-muted-foreground">Pay via Stripe checkout</p>
+                    </div>
+                  </Label>
+                </div>
+              </RadioGroup>
+            </div>
+          )}
+
+          {/* Payment method indicator when fixed */}
+          {!canChoosePayment && (
+            <div className="bg-muted/50 rounded-lg p-3 flex items-center gap-2">
+              {effectivePaymentMethod === "credits" ? (
+                <CreditCard className="w-4 h-4 text-primary" />
+              ) : (
+                <DollarSign className="w-4 h-4 text-green-600" />
+              )}
+              <div>
+                <p className="text-sm font-medium">
+                  {effectivePaymentMethod === "credits" ? "Credits Only" : "Stripe Payment Only"}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Payment method set by the service listing
+                </p>
+              </div>
+            </div>
+          )}
 
           <div className="bg-muted/50 rounded-lg p-3 text-sm space-y-1">
             <p className="font-medium">How contracts work:</p>
             <ul className="text-muted-foreground text-xs space-y-1 list-disc list-inside">
               <li>Both parties must accept the proposal</li>
-              <li>Service is marked "in progress" once accepted</li>
+              {finalPaymentMethod === "credits" ? (
+                <li>Credits are locked in escrow when the contract is accepted</li>
+              ) : (
+                <li>Stripe payment is required before service can begin</li>
+              )}
+              <li>Provider starts the service after escrow is secured</li>
               <li>Both confirm completion to release payment</li>
-              <li>Credits transfer automatically on mutual confirmation</li>
+              <li>Unpaid Stripe contracts are auto-cancelled after 48 hours</li>
             </ul>
           </div>
         </div>
