@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useContracts, ContractStatus } from "@/hooks/useContracts";
 import ContractCard from "@/components/messaging/ContractCard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { FileText, Clock, CheckCircle2, Play, AlertTriangle, X } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/sections/Footer";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 const statusTabs: { value: string; label: string; icon: React.ElementType; statuses: ContractStatus[] }[] = [
   { value: "all", label: "All", icon: FileText, statuses: [] },
