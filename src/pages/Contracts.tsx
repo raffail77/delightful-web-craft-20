@@ -10,8 +10,9 @@ import Footer from "@/components/sections/Footer";
 
 const statusTabs: { value: string; label: string; icon: React.ElementType; statuses: ContractStatus[] }[] = [
   { value: "all", label: "All", icon: FileText, statuses: [] },
-  { value: "active", label: "Active", icon: Play, statuses: ["proposed", "accepted", "in_progress"] },
+  { value: "active", label: "Active", icon: Play, statuses: ["proposed", "pending_payment", "accepted", "in_progress"] },
   { value: "proposed", label: "Proposed", icon: Clock, statuses: ["proposed"] },
+  { value: "pending_payment", label: "Awaiting Payment", icon: Clock, statuses: ["pending_payment"] },
   { value: "in_progress", label: "In Progress", icon: Play, statuses: ["in_progress"] },
   { value: "completed", label: "Completed", icon: CheckCircle2, statuses: ["completed"] },
   { value: "cancelled", label: "Cancelled", icon: X, statuses: ["cancelled"] },

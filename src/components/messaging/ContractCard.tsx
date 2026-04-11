@@ -47,7 +47,7 @@ const ContractCard = ({ contract, onAction }: ContractCardProps) => {
 
   useEffect(() => {
     const checkReview = async () => {
-      if (contract.status !== "completed") return;
+      if (!user || contract.status !== "completed") return;
       const { data } = await supabase
         .from("reviews").select("id")
         .eq("reviewer_id", user.id).eq("contract_id", contract.id).maybeSingle();
