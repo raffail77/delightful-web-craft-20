@@ -35,10 +35,8 @@ const ContractCard = ({ contract, onAction }: ContractCardProps) => {
   const [otherPartyName, setOtherPartyName] = useState("User");
   const [payingStripe, setPayingStripe] = useState(false);
 
-  if (!user) return null;
-
-  const isProvider = contract.provider_id === user.id;
-  const isClient = contract.client_id === user.id;
+  const isProvider = user ? contract.provider_id === user.id : false;
+  const isClient = user ? contract.client_id === user.id : false;
   const isProposer = contract.proposed_by === user.id;
   const myConfirmed = isProvider ? contract.provider_confirmed : contract.client_confirmed;
   const otherConfirmed = isProvider ? contract.client_confirmed : contract.provider_confirmed;
