@@ -35,21 +35,24 @@ export const useProfileData = (userId: string | undefined, isOwnProfile: boolean
   const fetchProfile = useCallback(async () => {
     if (!userId) return;
 
-    // Select only safe public columns for non-owner profiles; all columns for own profile
-    const columns = isOwnProfile
-      ? '*'
-      : 'id, user_id, full_name, avatar_url, bio, about, cover_url, headline, location, availability_status, skills, profile_slug, profile_visibility, is_verified, response_time_hours, created_at, updated_at, show_email, show_location, email';
-
     const { data, error } = await supabase
       .from('profiles')
-      .select(columns)
+      .select('*')
       .eq('user_id', userId)
       .maybeSingle();
 
     if (!error && data) {
-      // For non-owner profiles, hide email if show_email is false
-      if (!isOwnProfile && data.show_email === false) {
-        data.email = null;
+      // For non-owner profiles, strip sensitive fields client-side
+      if (!isOwnProfile) {
+        if (!data.show_email) data.email = null;
+        data.time_credits = 0;
+        data.earned_credits = 0;
+        data.bonus_credits = 0;
+        data.escrow_credits = 0;
+        data.stripe_connect_account_id = null;
+        data.stripe_connect_onboarding_complete = null;
+        data.is_suspended = null;
+        data.last_free_credits_at = null;
       }
       setProfile(data as Profile);
     }
