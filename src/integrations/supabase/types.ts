@@ -881,7 +881,102 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      profiles_public: {
+        Row: {
+          about: string | null
+          availability_status: string | null
+          avatar_url: string | null
+          bio: string | null
+          bonus_credits: number | null
+          cover_url: string | null
+          created_at: string | null
+          display_location: string | null
+          earned_credits: number | null
+          email: string | null
+          escrow_credits: number | null
+          full_name: string | null
+          headline: string | null
+          id: string | null
+          is_suspended: boolean | null
+          is_verified: boolean | null
+          last_free_credits_at: string | null
+          location: string | null
+          profile_slug: string | null
+          profile_visibility: string | null
+          response_time_hours: number | null
+          show_email: boolean | null
+          show_location: boolean | null
+          skills: string[] | null
+          stripe_connect_account_id: string | null
+          stripe_connect_onboarding_complete: boolean | null
+          time_credits: number | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          about?: string | null
+          availability_status?: string | null
+          avatar_url?: string | null
+          bio?: string | null
+          bonus_credits?: never
+          cover_url?: string | null
+          created_at?: string | null
+          display_location?: never
+          earned_credits?: never
+          email?: never
+          escrow_credits?: never
+          full_name?: string | null
+          headline?: string | null
+          id?: string | null
+          is_suspended?: never
+          is_verified?: boolean | null
+          last_free_credits_at?: never
+          location?: string | null
+          profile_slug?: string | null
+          profile_visibility?: string | null
+          response_time_hours?: number | null
+          show_email?: never
+          show_location?: never
+          skills?: string[] | null
+          stripe_connect_account_id?: never
+          stripe_connect_onboarding_complete?: never
+          time_credits?: never
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          about?: string | null
+          availability_status?: string | null
+          avatar_url?: string | null
+          bio?: string | null
+          bonus_credits?: never
+          cover_url?: string | null
+          created_at?: string | null
+          display_location?: never
+          earned_credits?: never
+          email?: never
+          escrow_credits?: never
+          full_name?: string | null
+          headline?: string | null
+          id?: string | null
+          is_suspended?: never
+          is_verified?: boolean | null
+          last_free_credits_at?: never
+          location?: string | null
+          profile_slug?: string | null
+          profile_visibility?: string | null
+          response_time_hours?: number | null
+          show_email?: never
+          show_location?: never
+          skills?: string[] | null
+          stripe_connect_account_id?: never
+          stripe_connect_onboarding_complete?: never
+          time_credits?: never
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       accept_contract_with_escrow: {

@@ -23,3 +23,12 @@ verify_jwt = false
 
 [functions.process-payout]
 verify_jwt = false
+
+[functions.contract-stripe-payment]
+verify_jwt = false
+
+[functions.verify-contract-payment]
+verify_jwt = false
+
+[functions.daily-free-credits]
+verify_jwt = false
