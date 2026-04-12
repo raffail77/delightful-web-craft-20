@@ -42,9 +42,21 @@ export const useProfileData = (userId: string | undefined, isOwnProfile: boolean
       .maybeSingle();
 
     if (!error && data) {
+      // For non-owner profiles, strip sensitive fields client-side
+      if (!isOwnProfile) {
+        if (!data.show_email) data.email = null;
+        data.time_credits = 0;
+        data.earned_credits = 0;
+        data.bonus_credits = 0;
+        data.escrow_credits = 0;
+        data.stripe_connect_account_id = null;
+        data.stripe_connect_onboarding_complete = null;
+        data.is_suspended = null;
+        data.last_free_credits_at = null;
+      }
       setProfile(data as Profile);
     }
-  }, [userId]);
+  }, [userId, isOwnProfile]);
 
   const fetchCategories = useCallback(async () => {
     if (!userId) return;
