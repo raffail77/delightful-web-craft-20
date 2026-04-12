@@ -35,16 +35,25 @@ export const useProfileData = (userId: string | undefined, isOwnProfile: boolean
   const fetchProfile = useCallback(async () => {
     if (!userId) return;
 
+    // Select only safe public columns for non-owner profiles; all columns for own profile
+    const columns = isOwnProfile
+      ? '*'
+      : 'id, user_id, full_name, avatar_url, bio, about, cover_url, headline, location, availability_status, skills, profile_slug, profile_visibility, is_verified, response_time_hours, created_at, updated_at, show_email, show_location, email';
+
     const { data, error } = await supabase
       .from('profiles')
-      .select('*')
+      .select(columns)
       .eq('user_id', userId)
       .maybeSingle();
 
     if (!error && data) {
+      // For non-owner profiles, hide email if show_email is false
+      if (!isOwnProfile && data.show_email === false) {
+        data.email = null;
+      }
       setProfile(data as Profile);
     }
-  }, [userId]);
+  }, [userId, isOwnProfile]);
 
   const fetchCategories = useCallback(async () => {
     if (!userId) return;
