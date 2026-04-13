@@ -228,6 +228,11 @@ const ContractProposalDialog = ({
             {finalPaymentMethod === "stripe" && (
               <p className="text-xs text-muted-foreground">
                 Payment will be processed via Stripe. The amount will be held in escrow until service completion.
+                {effectivePaymentMethod === "stripe" && (
+                  <span className="block mt-1 text-amber-600 dark:text-amber-400 font-medium">
+                    This service does not accept time credits — only cash payment via Stripe is available.
+                  </span>
+                )}
               </p>
             )}
           </div>
