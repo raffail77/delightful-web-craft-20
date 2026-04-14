@@ -440,7 +440,7 @@ const Auth = () => {
           {mode === "forgot" && (
             <>
               <button
-                onClick={() => setMode("signin")}
+                onClick={() => { setMode("signin"); setResetEmailSent(false); }}
                 className="flex items-center gap-1 text-muted-foreground hover:text-foreground mb-4"
               >
                 <ArrowLeft className="w-4 h-4" />
@@ -450,28 +450,48 @@ const Auth = () => {
               <h1 className="text-2xl font-serif font-bold text-center mb-2">Reset Password</h1>
               <p className="text-muted-foreground text-center mb-6">Enter your email to receive a reset link</p>
               
-              <form onSubmit={resetForm.handleSubmit(handleForgotPassword)} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="resetEmail">Email</Label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                    <Input
-                      id="resetEmail"
-                      type="email"
-                      placeholder="your@email.com"
-                      className="pl-10"
-                      {...resetForm.register("email")}
-                    />
+              {resetEmailSent ? (
+                <div className="text-center space-y-4">
+                  <div className="w-16 h-16 mx-auto bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center">
+                    <Mail className="w-8 h-8 text-green-600 dark:text-green-400" />
                   </div>
-                  {resetForm.formState.errors.email && (
-                    <p className="text-sm text-destructive">{resetForm.formState.errors.email.message}</p>
-                  )}
+                  <p className="text-foreground font-medium">Check your inbox</p>
+                  <p className="text-sm text-muted-foreground">
+                    If an account exists with this email, we've sent a password reset link. Please check your inbox and spam folder.
+                  </p>
+                  <p className="text-xs text-muted-foreground">The link will expire in 15 minutes.</p>
+                  <Button
+                    variant="outline"
+                    className="w-full mt-4"
+                    onClick={() => { setMode("signin"); setResetEmailSent(false); }}
+                  >
+                    Back to Sign In
+                  </Button>
                 </div>
+              ) : (
+                <form onSubmit={resetForm.handleSubmit(handleForgotPassword)} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="resetEmail">Email</Label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                      <Input
+                        id="resetEmail"
+                        type="email"
+                        placeholder="yourname@example.com"
+                        className="pl-10"
+                        {...resetForm.register("email")}
+                      />
+                    </div>
+                    {resetForm.formState.errors.email && (
+                      <p className="text-sm text-destructive">{resetForm.formState.errors.email.message}</p>
+                    )}
+                  </div>
 
-                <Button type="submit" variant="gold" className="w-full" disabled={isLoading}>
-                  {isLoading ? "Sending..." : "Send Reset Link"}
-                </Button>
-              </form>
+                  <Button type="submit" variant="gold" className="w-full" disabled={isLoading}>
+                    {isLoading ? "Sending..." : "Send Reset Link"}
+                  </Button>
+                </form>
+              )}
             </>
           )}
 
