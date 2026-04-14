@@ -40,6 +40,27 @@ const newPasswordSchema = z.object({
 
 type AuthMode = "signin" | "signup" | "forgot" | "reset";
 
+// Client-side rate limit tracker for password reset requests
+const resetRateLimitMap = new Map<string, number[]>();
+const RESET_MAX_REQUESTS = 3;
+const RESET_WINDOW_MS = 60 * 60 * 1000; // 1 hour
+
+function isResetRateLimited(): boolean {
+  const key = "forgot-password";
+  const now = Date.now();
+  const timestamps = (resetRateLimitMap.get(key) || []).filter(t => now - t < RESET_WINDOW_MS);
+  resetRateLimitMap.set(key, timestamps);
+  return timestamps.length >= RESET_MAX_REQUESTS;
+}
+
+function recordResetAttempt(): void {
+  const key = "forgot-password";
+  const now = Date.now();
+  const timestamps = (resetRateLimitMap.get(key) || []).filter(t => now - t < RESET_WINDOW_MS);
+  timestamps.push(now);
+  resetRateLimitMap.set(key, timestamps);
+}
+
 const Auth = () => {
   const [searchParams] = useSearchParams();
   const initialMode = searchParams.get("mode") as AuthMode || "signin";
@@ -47,6 +68,7 @@ const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [resetEmailSent, setResetEmailSent] = useState(false);
   
   const { signUp, signIn, signInWithGoogle, resetPassword, updatePassword, user } = useAuth();
   const navigate = useNavigate();
