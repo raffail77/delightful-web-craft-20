@@ -145,15 +145,21 @@ const Auth = () => {
   };
 
   const handleForgotPassword = async (data: z.infer<typeof resetSchema>) => {
-    setIsLoading(true);
-    const { error } = await resetPassword(data.email);
-    setIsLoading(false);
-
-    if (error) {
-      toast({ title: "Error", description: "Failed to send reset email", variant: "destructive" });
-    } else {
-      toast({ title: "Email Sent", description: "Check your inbox for the password reset link" });
+    if (isResetRateLimited()) {
+      toast({
+        title: "Too many requests",
+        description: "You've exceeded the maximum number of reset attempts. Please try again later.",
+        variant: "destructive",
+      });
+      return;
     }
+
+    setIsLoading(true);
+    recordResetAttempt();
+    // Fire and forget — always show success to prevent user enumeration
+    await resetPassword(data.email);
+    setIsLoading(false);
+    setResetEmailSent(true);
   };
 
   const handleUpdatePassword = async (data: z.infer<typeof newPasswordSchema>) => {
