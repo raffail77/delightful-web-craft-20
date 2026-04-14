@@ -170,8 +170,8 @@ const Auth = () => {
     if (error) {
       toast({ title: "Error", description: "Failed to update password", variant: "destructive" });
     } else {
-      toast({ title: "Success!", description: "Your password has been updated" });
-      navigate("/");
+      toast({ title: "Password Updated!", description: "Your password has been reset successfully. Please sign in." });
+      setMode("signin");
     }
   };
 
