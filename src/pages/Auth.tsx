@@ -452,8 +452,8 @@ const Auth = () => {
               
               {resetEmailSent ? (
                 <div className="text-center space-y-4">
-                  <div className="w-16 h-16 mx-auto bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center">
-                    <Mail className="w-8 h-8 text-green-600 dark:text-green-400" />
+                  <div className="w-16 h-16 mx-auto bg-primary/10 rounded-full flex items-center justify-center">
+                    <Mail className="w-8 h-8 text-primary" />
                   </div>
                   <p className="text-foreground font-medium">Check your inbox</p>
                   <p className="text-sm text-muted-foreground">
