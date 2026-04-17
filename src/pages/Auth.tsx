@@ -9,7 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
-import { Clock, Mail, Lock, User, ArrowLeft, Eye, EyeOff } from "lucide-react";
+import { Clock, Mail, Lock, User, ArrowLeft, Eye, EyeOff, ShieldCheck } from "lucide-react";
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 
 const signUpSchema = z.object({
   fullName: z.string().min(2, "Name must be at least 2 characters").max(100),
@@ -38,7 +39,7 @@ const newPasswordSchema = z.object({
   path: ["confirmPassword"],
 });
 
-type AuthMode = "signin" | "signup" | "forgot" | "reset";
+type AuthMode = "signin" | "signup" | "forgot" | "reset" | "verify-otp";
 
 // Client-side rate limit tracker for password reset requests
 const resetRateLimitMap = new Map<string, number[]>();
@@ -69,8 +70,11 @@ const Auth = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [resetEmailSent, setResetEmailSent] = useState(false);
-  
-  const { signUp, signIn, signInWithGoogle, resetPassword, updatePassword, user } = useAuth();
+  const [otpCode, setOtpCode] = useState("");
+  const [pendingEmail, setPendingEmail] = useState("");
+  const [resendCooldown, setResendCooldown] = useState(0);
+
+  const { signUp, verifyOtp, resendOtp, signIn, signInWithGoogle, resetPassword, updatePassword, user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -100,6 +104,13 @@ const Auth = () => {
     defaultValues: { password: "", confirmPassword: "" },
   });
 
+  // Cooldown timer for OTP resend
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const timer = setTimeout(() => setResendCooldown((c) => c - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [resendCooldown]);
+
   const handleSignUp = async (data: z.infer<typeof signUpSchema>) => {
     setIsLoading(true);
     const { error } = await signUp(data.email, data.password, data.fullName);
@@ -107,13 +118,53 @@ const Auth = () => {
 
     if (error) {
       let message = "Failed to create account";
-      if (error.message?.includes("already registered")) {
+      if (error.message?.includes("already registered") || error.message?.includes("already been registered")) {
         message = "An account with this email already exists";
       }
       toast({ title: "Error", description: message, variant: "destructive" });
     } else {
-      toast({ title: "Success!", description: "Account created successfully. Welcome to TimeBank!" });
+      setPendingEmail(data.email);
+      setOtpCode("");
+      setResendCooldown(60);
+      setMode("verify-otp");
+      toast({
+        title: "Check your email",
+        description: "We sent a 6-digit verification code to your inbox.",
+      });
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    if (otpCode.length !== 6) {
+      toast({ title: "Invalid code", description: "Please enter all 6 digits", variant: "destructive" });
+      return;
+    }
+    setIsLoading(true);
+    const { error } = await verifyOtp(pendingEmail, otpCode);
+    setIsLoading(false);
+
+    if (error) {
+      toast({
+        title: "Verification failed",
+        description: error.message || "The code is invalid or expired. Try again.",
+        variant: "destructive",
+      });
+    } else {
+      toast({ title: "Email verified!", description: "Welcome to TimeBank!" });
       navigate("/");
+    }
+  };
+
+  const handleResendOtp = async () => {
+    if (resendCooldown > 0 || !pendingEmail) return;
+    setIsLoading(true);
+    const { error } = await resendOtp(pendingEmail);
+    setIsLoading(false);
+    if (error) {
+      toast({ title: "Error", description: "Could not resend code. Please try again.", variant: "destructive" });
+    } else {
+      setResendCooldown(60);
+      toast({ title: "Code sent", description: "A new verification code is on its way." });
     }
   };
 
@@ -553,6 +604,65 @@ const Auth = () => {
                   {isLoading ? "Updating..." : "Update Password"}
                 </Button>
               </form>
+            </>
+          )}
+
+          {mode === "verify-otp" && (
+            <>
+              <button
+                onClick={() => setMode("signup")}
+                className="flex items-center gap-1 text-muted-foreground hover:text-foreground mb-4"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                Back
+              </button>
+
+              <div className="w-16 h-16 mx-auto mb-4 bg-gold/10 rounded-full flex items-center justify-center">
+                <ShieldCheck className="w-8 h-8 text-gold" />
+              </div>
+
+              <h1 className="text-2xl font-serif font-bold text-center mb-2">Verify your email</h1>
+              <p className="text-muted-foreground text-center mb-6">
+                Enter the 6-digit code we sent to <span className="text-foreground font-medium">{pendingEmail}</span>
+              </p>
+
+              <div className="flex justify-center mb-6">
+                <InputOTP maxLength={6} value={otpCode} onChange={setOtpCode}>
+                  <InputOTPGroup>
+                    <InputOTPSlot index={0} />
+                    <InputOTPSlot index={1} />
+                    <InputOTPSlot index={2} />
+                    <InputOTPSlot index={3} />
+                    <InputOTPSlot index={4} />
+                    <InputOTPSlot index={5} />
+                  </InputOTPGroup>
+                </InputOTP>
+              </div>
+
+              <Button
+                type="button"
+                variant="gold"
+                className="w-full"
+                disabled={isLoading || otpCode.length !== 6}
+                onClick={handleVerifyOtp}
+              >
+                {isLoading ? "Verifying..." : "Verify Email"}
+              </Button>
+
+              <p className="text-center mt-6 text-sm text-muted-foreground">
+                Didn't receive the code?{" "}
+                <button
+                  type="button"
+                  onClick={handleResendOtp}
+                  disabled={resendCooldown > 0 || isLoading}
+                  className="text-gold hover:text-gold-dark font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : "Resend code"}
+                </button>
+              </p>
+              <p className="text-center mt-2 text-xs text-muted-foreground">
+                Check your spam folder if you don't see it. The code expires in 10 minutes.
+              </p>
             </>
           )}
         </div>
