@@ -7,6 +7,8 @@ interface AuthContextType {
   session: Session | null;
   loading: boolean;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: any }>;
+  verifyOtp: (email: string, token: string) => Promise<{ error: any }>;
+  resendOtp: (email: string) => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signInWithGoogle: () => Promise<{ error: any }>;
   signOut: () => Promise<void>;
@@ -64,17 +66,35 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const signUp = async (email: string, password: string, fullName: string) => {
-    const redirectUrl = `${window.location.origin}/`;
-    
+    // Note: For OTP-based email verification, ensure that in the Supabase Auth
+    // email template for "Confirm signup" the {{ .Token }} variable is included.
+    // We intentionally omit emailRedirectTo so Supabase sends a 6-digit OTP code
+    // instead of (or in addition to) a magic link.
     const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        emailRedirectTo: redirectUrl,
         data: {
           full_name: fullName,
         },
       },
+    });
+    return { error };
+  };
+
+  const verifyOtp = async (email: string, token: string) => {
+    const { error } = await supabase.auth.verifyOtp({
+      email,
+      token,
+      type: "signup",
+    });
+    return { error };
+  };
+
+  const resendOtp = async (email: string) => {
+    const { error } = await supabase.auth.resend({
+      type: "signup",
+      email,
     });
     return { error };
   };
@@ -129,6 +149,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         session,
         loading,
         signUp,
+        verifyOtp,
+        resendOtp,
         signIn,
         signInWithGoogle,
         signOut,
