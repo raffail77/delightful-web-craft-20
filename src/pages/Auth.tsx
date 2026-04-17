@@ -606,6 +606,65 @@ const Auth = () => {
               </form>
             </>
           )}
+
+          {mode === "verify-otp" && (
+            <>
+              <button
+                onClick={() => setMode("signup")}
+                className="flex items-center gap-1 text-muted-foreground hover:text-foreground mb-4"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                Back
+              </button>
+
+              <div className="w-16 h-16 mx-auto mb-4 bg-gold/10 rounded-full flex items-center justify-center">
+                <ShieldCheck className="w-8 h-8 text-gold" />
+              </div>
+
+              <h1 className="text-2xl font-serif font-bold text-center mb-2">Verify your email</h1>
+              <p className="text-muted-foreground text-center mb-6">
+                Enter the 6-digit code we sent to <span className="text-foreground font-medium">{pendingEmail}</span>
+              </p>
+
+              <div className="flex justify-center mb-6">
+                <InputOTP maxLength={6} value={otpCode} onChange={setOtpCode}>
+                  <InputOTPGroup>
+                    <InputOTPSlot index={0} />
+                    <InputOTPSlot index={1} />
+                    <InputOTPSlot index={2} />
+                    <InputOTPSlot index={3} />
+                    <InputOTPSlot index={4} />
+                    <InputOTPSlot index={5} />
+                  </InputOTPGroup>
+                </InputOTP>
+              </div>
+
+              <Button
+                type="button"
+                variant="gold"
+                className="w-full"
+                disabled={isLoading || otpCode.length !== 6}
+                onClick={handleVerifyOtp}
+              >
+                {isLoading ? "Verifying..." : "Verify Email"}
+              </Button>
+
+              <p className="text-center mt-6 text-sm text-muted-foreground">
+                Didn't receive the code?{" "}
+                <button
+                  type="button"
+                  onClick={handleResendOtp}
+                  disabled={resendCooldown > 0 || isLoading}
+                  className="text-gold hover:text-gold-dark font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : "Resend code"}
+                </button>
+              </p>
+              <p className="text-center mt-2 text-xs text-muted-foreground">
+                Check your spam folder if you don't see it. The code expires in 10 minutes.
+              </p>
+            </>
+          )}
         </div>
       </div>
     </div>
