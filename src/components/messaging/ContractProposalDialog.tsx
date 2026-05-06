@@ -305,7 +305,7 @@ const ContractProposalDialog = ({
           </div>
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="px-6 py-4 border-t border-border bg-background">
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={sending}>
             Cancel
           </Button>
