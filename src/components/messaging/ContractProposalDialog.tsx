@@ -165,7 +165,7 @@ const ContractProposalDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md max-h-[90vh] flex flex-col p-0 gap-0">
+      <DialogContent className="max-w-md max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden rounded-lg">
         <DialogHeader className="px-6 pt-6 pb-2">
           <DialogTitle className="flex items-center gap-2">
             <FileText className="w-5 h-5 text-primary" />
