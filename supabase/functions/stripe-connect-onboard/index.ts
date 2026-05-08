@@ -93,11 +93,20 @@ Deno.serve(async (req) => {
     }
 
     // Create an account link for onboarding
-    const rawOrigin = req.headers.get("origin") || "";
-    const allowedOriginPattern = /^https?:\/\/(localhost(:\d+)?|.*\.lovable\.app)$/;
-    const origin = allowedOriginPattern.test(rawOrigin)
-      ? rawOrigin
-      : "https://id-preview--a93a3514-3c80-4bad-bd2e-7da43ca74999.lovable.app";
+    const rawOrigin = req.headers.get("origin") || req.headers.get("referer") || "";
+    let origin = "";
+    try {
+      origin = new URL(rawOrigin).origin;
+    } catch {
+      origin = "";
+    }
+    if (!origin) {
+      console.warn("No valid origin/referer header on request; cannot build redirect URL.");
+      return new Response(JSON.stringify({ error: "Missing origin header" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     const accountLink = await stripe.accountLinks.create({
       account: accountId,
       refresh_url: `${origin}/wallet?connect=refresh`,

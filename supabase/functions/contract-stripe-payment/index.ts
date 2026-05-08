@@ -51,11 +51,16 @@ Deno.serve(async (req) => {
     const customers = await stripe.customers.list({ email: user.email!, limit: 1 });
     const customerId = customers.data.length > 0 ? customers.data[0].id : undefined;
 
-    const rawOrigin = req.headers.get("origin") || "";
-    const allowedOriginPattern = /^https?:\/\/(localhost(:\d+)?|.*\.lovable\.app)$/;
-    const origin = allowedOriginPattern.test(rawOrigin)
-      ? rawOrigin
-      : "https://id-preview--a93a3514-3c80-4bad-bd2e-7da43ca74999.lovable.app";
+    const rawOrigin = req.headers.get("origin") || req.headers.get("referer") || "";
+    let origin = "";
+    try {
+      origin = new URL(rawOrigin).origin;
+    } catch {
+      origin = "";
+    }
+    if (!origin) {
+      throw new Error("Missing origin header");
+    }
 
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
