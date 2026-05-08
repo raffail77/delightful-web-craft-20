@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCredits } from "@/hooks/useCredits";
@@ -73,10 +73,40 @@ export default function Wallet() {
     if (!authLoading && !user) navigate("/auth");
   }, [user, authLoading]);
 
+  const fetchConnectStatus = useCallback(async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke("stripe-connect-status");
+      if (error) throw error;
+      if (data) {
+        setConnectStatus(data);
+        return data;
+      }
+    } catch (err) {
+      console.error("Connect status error:", err);
+    }
+
+    return null;
+  }, []);
+
+  const pollConnectStatus = useCallback(async (attempts = 5, intervalMs = 800) => {
+    for (let attempt = 0; attempt < attempts; attempt += 1) {
+      const status = await fetchConnectStatus();
+      if (status?.connected || status?.onboarding_complete) {
+        return status;
+      }
+
+      if (attempt < attempts - 1) {
+        await new Promise((resolve) => window.setTimeout(resolve, intervalMs));
+      }
+    }
+
+    return null;
+  }, [fetchConnectStatus]);
+
   useEffect(() => {
     if (!user) return;
     fetchAll();
-    fetchConnectStatus();
+    void pollConnectStatus();
 
     // Subscribe to profile changes for realtime balance updates
     const channel = supabase
@@ -105,20 +135,20 @@ export default function Wallet() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user]);
+  }, [user, pollConnectStatus]);
 
   // Re-fetch connect status when user returns to this tab (e.g. after Stripe onboarding)
   useEffect(() => {
     if (!user) return;
     const handleVisibility = () => {
       if (document.visibilityState === "visible") {
-        fetchConnectStatus();
+        void pollConnectStatus(4, 1000);
         refreshCredits();
       }
     };
     document.addEventListener("visibilitychange", handleVisibility);
     return () => document.removeEventListener("visibilitychange", handleVisibility);
-  }, [user]);
+  }, [user, pollConnectStatus, refreshCredits]);
 
   // Verify payment on success redirect
   // Auto-verify any pending purchases on every wallet load
@@ -144,17 +174,17 @@ export default function Wallet() {
 
     const params = new URLSearchParams(window.location.search);
     if (params.get("payment") === "success" || params.get("connect")) {
-      if (params.get("connect") === "complete") fetchConnectStatus();
+      if (params.get("connect")) void pollConnectStatus(6, 1000);
       window.history.replaceState({}, "", "/wallet");
     }
-  }, [user]);
+  }, [user, pollConnectStatus, refreshCredits, toast]);
 
   const fetchAll = async () => {
     if (!user) return;
     setLoading(true);
 
     const [profileRes, purchasesRes, withdrawalsRes, txRes, settingsRes] = await Promise.all([
-      supabase.from("profiles").select("time_credits, earned_credits, bonus_credits, escrow_credits").eq("user_id", user.id).single(),
+      supabase.from("profiles").select("time_credits, earned_credits, bonus_credits, escrow_credits, stripe_connect_account_id, stripe_connect_onboarding_complete").eq("user_id", user.id).single(),
       supabase.from("credit_purchases").select("*").eq("user_id", user.id).order("created_at", { ascending: false }),
       supabase.from("withdrawal_requests").select("*").eq("user_id", user.id).order("created_at", { ascending: false }),
       supabase.from("transactions").select("*").or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`).order("created_at", { ascending: false }).limit(50),
@@ -162,6 +192,13 @@ export default function Wallet() {
     ]);
 
     setProfile(profileRes.data);
+    if (profileRes.data?.stripe_connect_account_id) {
+      setConnectStatus((current) => ({
+        connected: true,
+        onboarding_complete: current?.onboarding_complete ?? !!profileRes.data?.stripe_connect_onboarding_complete,
+        payouts_enabled: current?.payouts_enabled,
+      }));
+    }
     setPurchases((purchasesRes.data as any[]) || []);
     setWithdrawals((withdrawalsRes.data as any[]) || []);
     setTransactions((txRes.data as any[]) || []);
@@ -172,22 +209,17 @@ export default function Wallet() {
     setLoading(false);
   };
 
-  const fetchConnectStatus = async () => {
-    try {
-      const { data, error } = await supabase.functions.invoke("stripe-connect-status");
-      if (!error && data) setConnectStatus(data);
-    } catch (err) {
-      console.error("Connect status error:", err);
-    }
-  };
-
   const handleConnectStripe = async () => {
     setConnectLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke("stripe-connect-onboard");
       if (error) throw error;
       if (data?.url) {
-        window.open(data.url, "_blank");
+        setConnectStatus((current) => current?.onboarding_complete
+          ? current
+          : { ...current, connected: true, onboarding_complete: false });
+        void pollConnectStatus(6, 1000);
+        window.open(data.url, "_blank", "noopener,noreferrer");
       }
     } catch (err: any) {
       toast({ title: "Error", description: err.message || "Failed to start onboarding", variant: "destructive" });
