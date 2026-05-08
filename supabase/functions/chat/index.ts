@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import { checkRateLimit, rateLimitHeaders, getRateLimitKey } from "../_shared/rate-limit.ts";
 
 const corsHeaders = {
@@ -12,8 +13,28 @@ serve(async (req) => {
   }
 
   try {
-    // Rate limit: 15 chat requests per minute per IP
-    const rlKey = getRateLimitKey(req, "chat");
+    // Require authentication
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const token = authHeader.replace("Bearer ", "");
+    const supabaseClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+    );
+    const { data: claimsData, error: claimsError } = await supabaseClient.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const userId = claimsData.claims.sub as string;
+
+    // Rate limit: 15 chat requests per minute per user
+    const rlKey = getRateLimitKey(req, "chat", userId);
     const rl = checkRateLimit(rlKey, 15, 60_000);
     if (!rl.allowed) {
       return new Response(JSON.stringify({ error: "Too many requests. Please slow down." }), {

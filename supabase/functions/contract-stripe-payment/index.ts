@@ -51,7 +51,11 @@ Deno.serve(async (req) => {
     const customers = await stripe.customers.list({ email: user.email!, limit: 1 });
     const customerId = customers.data.length > 0 ? customers.data[0].id : undefined;
 
-    const origin = req.headers.get("origin") || "https://lovable.dev";
+    const rawOrigin = req.headers.get("origin") || "";
+    const allowedOriginPattern = /^https?:\/\/(localhost(:\d+)?|.*\.lovable\.app)$/;
+    const origin = allowedOriginPattern.test(rawOrigin)
+      ? rawOrigin
+      : "https://id-preview--a93a3514-3c80-4bad-bd2e-7da43ca74999.lovable.app";
 
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
