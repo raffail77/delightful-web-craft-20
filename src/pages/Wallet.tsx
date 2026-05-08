@@ -184,7 +184,7 @@ export default function Wallet() {
     setLoading(true);
 
     const [profileRes, purchasesRes, withdrawalsRes, txRes, settingsRes] = await Promise.all([
-      supabase.from("profiles").select("time_credits, earned_credits, bonus_credits, escrow_credits").eq("user_id", user.id).single(),
+      supabase.from("profiles").select("time_credits, earned_credits, bonus_credits, escrow_credits, stripe_connect_account_id, stripe_connect_onboarding_complete").eq("user_id", user.id).single(),
       supabase.from("credit_purchases").select("*").eq("user_id", user.id).order("created_at", { ascending: false }),
       supabase.from("withdrawal_requests").select("*").eq("user_id", user.id).order("created_at", { ascending: false }),
       supabase.from("transactions").select("*").or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`).order("created_at", { ascending: false }).limit(50),
@@ -192,6 +192,13 @@ export default function Wallet() {
     ]);
 
     setProfile(profileRes.data);
+    if (profileRes.data?.stripe_connect_account_id) {
+      setConnectStatus((current) => ({
+        connected: true,
+        onboarding_complete: current?.onboarding_complete ?? !!profileRes.data?.stripe_connect_onboarding_complete,
+        payouts_enabled: current?.payouts_enabled,
+      }));
+    }
     setPurchases((purchasesRes.data as any[]) || []);
     setWithdrawals((withdrawalsRes.data as any[]) || []);
     setTransactions((txRes.data as any[]) || []);
