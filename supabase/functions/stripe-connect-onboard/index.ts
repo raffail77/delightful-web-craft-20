@@ -53,6 +53,27 @@ Deno.serve(async (req) => {
       .eq("user_id", userId)
       .maybeSingle();
 
+    if (!profile) {
+      const { error: ensureProfileError } = await adminSupabase
+        .from("profiles")
+        .upsert(
+          {
+            user_id: userId,
+            email: typeof claimsData.claims.email === "string" ? claimsData.claims.email : null,
+            full_name: null,
+          },
+          { onConflict: "user_id" }
+        );
+
+      if (ensureProfileError) {
+        console.error("Failed to create missing profile before Stripe onboarding:", ensureProfileError);
+        return new Response(JSON.stringify({ error: "Could not create profile for Stripe onboarding" }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
     let accountId = profile?.stripe_connect_account_id;
 
     // If we have a stored account ID, verify it's still valid under the current Stripe key
@@ -92,8 +113,16 @@ Deno.serve(async (req) => {
       // Save the account ID
       const { error: saveError } = await adminSupabase
         .from("profiles")
-        .update({ stripe_connect_account_id: accountId, stripe_connect_onboarding_complete: false })
-        .eq("user_id", userId);
+        .upsert(
+          {
+            user_id: userId,
+            email: profile?.email ?? (typeof claimsData.claims.email === "string" ? claimsData.claims.email : null),
+            full_name: profile?.full_name ?? null,
+            stripe_connect_account_id: accountId,
+            stripe_connect_onboarding_complete: false,
+          },
+          { onConflict: "user_id" }
+        );
 
       if (saveError) {
         console.error("Failed to persist Stripe Connect account on profile:", saveError);
