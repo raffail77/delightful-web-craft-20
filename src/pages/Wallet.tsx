@@ -218,6 +218,7 @@ export default function Wallet() {
         setConnectStatus((current) => current?.onboarding_complete
           ? current
           : { ...current, connected: true, onboarding_complete: false });
+        void pollConnectStatus(6, 1000);
         window.open(data.url, "_blank", "noopener,noreferrer");
       }
     } catch (err: any) {
