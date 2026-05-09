@@ -51,7 +51,7 @@ Deno.serve(async (req) => {
       .from("profiles")
       .select("stripe_connect_account_id, email, full_name")
       .eq("user_id", userId)
-      .single();
+      .maybeSingle();
 
     let accountId = profile?.stripe_connect_account_id;
 
@@ -63,10 +63,14 @@ Deno.serve(async (req) => {
         console.warn(`Stored Connect account ${accountId} is invalid/inaccessible, clearing and creating new one.`, verifyErr.message);
         accountId = null;
         // Clear the stale account ID
-        await adminSupabase
-          .from("profiles")
-          .update({ stripe_connect_account_id: null, stripe_connect_onboarding_complete: false })
-          .eq("user_id", userId);
+      const { error: clearError } = await adminSupabase
+        .from("profiles")
+        .update({ stripe_connect_account_id: null, stripe_connect_onboarding_complete: false })
+        .eq("user_id", userId);
+
+      if (clearError) {
+        console.error("Failed to clear stale Stripe Connect account on profile:", clearError);
+      }
       }
     }
 
@@ -86,10 +90,18 @@ Deno.serve(async (req) => {
       accountId = account.id;
 
       // Save the account ID
-      await adminSupabase
+      const { error: saveError } = await adminSupabase
         .from("profiles")
-        .update({ stripe_connect_account_id: accountId })
+        .update({ stripe_connect_account_id: accountId, stripe_connect_onboarding_complete: false })
         .eq("user_id", userId);
+
+      if (saveError) {
+        console.error("Failed to persist Stripe Connect account on profile:", saveError);
+        return new Response(JSON.stringify({ error: "Could not save Stripe Connect account to profile" }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
 
     // Create an account link for onboarding
