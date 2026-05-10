@@ -1,5 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
-import Stripe from "https://esm.sh/stripe@18.5.0";
+import Stripe from "https://esm.sh/stripe@22.1.1";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -29,7 +29,7 @@ Deno.serve(async (req) => {
     if (!contract_id) throw new Error("Missing contract_id");
 
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
-    const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
+    const stripe = new Stripe(stripeKey, { apiVersion: "2026-04-22.dahlia" });
 
     // Fetch contract
     const { data: contract, error: fetchError } = await adminClient

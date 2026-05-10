@@ -1,4 +1,4 @@
-import Stripe from "https://esm.sh/stripe@18.5.0";
+import Stripe from "https://esm.sh/stripe@22.1.1";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 
 const corsHeaders = {
@@ -38,7 +38,7 @@ Deno.serve(async (req) => {
 
     const userId = claimsData.claims.sub as string;
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, {
-      apiVersion: "2025-08-27.basil",
+      apiVersion: "2026-04-22.dahlia",
     });
 
     const adminSupabase = createClient(
