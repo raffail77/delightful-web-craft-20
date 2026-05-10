@@ -1,4 +1,4 @@
-import Stripe from "https://esm.sh/stripe@18.5.0";
+import Stripe from "https://esm.sh/stripe@22.1.1";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 
 const corsHeaders = {
@@ -42,7 +42,7 @@ Deno.serve(async (req) => {
     if (contract.client_id !== user.id) throw new Error("Only the client can pay");
     if (contract.status !== "pending_payment") throw new Error("Contract is not awaiting payment");
 
-    const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
+    const stripe = new Stripe(stripeKey, { apiVersion: "2026-04-22.dahlia" });
 
     // Calculate USD amount ($2 per credit)
     const amountCents = contract.agreed_credits * 200;
