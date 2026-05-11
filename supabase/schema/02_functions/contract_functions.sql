@@ -126,6 +126,11 @@ BEGIN
       VALUES (v_contract.client_id, v_contract.provider_id, v_contract.service_id, v_contract.agreed_credits,
               'Contract payment: ' || v_contract.title, 'completed', 'service_payment', now())
       RETURNING id INTO v_transaction_id;
+    ELSIF v_contract.payment_method = 'stripe' THEN
+      INSERT INTO transactions (sender_id, receiver_id, service_id, amount, description, status, transaction_type, completed_at)
+      VALUES (v_contract.client_id, v_contract.provider_id, v_contract.service_id, v_contract.agreed_credits,
+              'Contract payment (Stripe): ' || v_contract.title, 'completed', 'service_payment', now())
+      RETURNING id INTO v_transaction_id;
     END IF;
 
     UPDATE contracts
