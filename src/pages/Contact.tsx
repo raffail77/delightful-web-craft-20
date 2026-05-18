@@ -1,9 +1,15 @@
+import { useState } from "react";
+import { useMutation } from "@tanstack/react-query";
 import { Mail, MapPin, Phone, Send } from "lucide-react";
+import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/sections/Footer";
 
@@ -13,7 +19,37 @@ const contactInfo = [
   { icon: MapPin, label: "Office", value: "Lahore, Pakistan" },
 ];
 
+const schema = z.object({
+  name: z.string().trim().min(2).max(100),
+  email: z.string().trim().email().max(255),
+  category: z.string().min(1),
+  subject: z.string().trim().min(3).max(200),
+  message: z.string().trim().min(10).max(3000),
+});
+
+const RATE_KEY = "contact_last_sent";
+
 const Contact = () => {
+  const [form, setForm] = useState({ name: "", email: "", category: "general", subject: "", message: "" });
+
+  const mutation = useMutation({
+    mutationFn: async () => {
+      const last = Number(localStorage.getItem(RATE_KEY) || 0);
+      if (Date.now() - last < 60_000) throw new Error("Please wait a minute before sending another message.");
+      const parsed = schema.parse(form);
+      const { data: userData } = await supabase.auth.getUser();
+      const payload = { ...parsed, user_id: userData.user?.id ?? null };
+      const { error } = await supabase.from("contact_messages").insert(payload as any);
+      if (error) throw error;
+      localStorage.setItem(RATE_KEY, String(Date.now()));
+    },
+    onSuccess: () => {
+      toast({ title: "Message sent", description: "We'll get back to you shortly." });
+      setForm({ name: "", email: "", category: "general", subject: "", message: "" });
+    },
+    onError: (e: any) => toast({ title: "Could not send", description: e.message || "Please check the form", variant: "destructive" }),
+  });
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -29,41 +65,48 @@ const Contact = () => {
           </div>
 
           <div className="grid lg:grid-cols-2 gap-12 max-w-5xl mx-auto">
-            {/* Contact Form */}
             <Card>
               <CardContent className="p-8">
-                <form className="space-y-6">
+                <form className="space-y-6" onSubmit={(e) => { e.preventDefault(); mutation.mutate(); }}>
                   <div className="grid md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="name">Name</Label>
-                      <Input id="name" placeholder="Your name" />
+                      <Label htmlFor="name">Name *</Label>
+                      <Input id="name" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="email">Email</Label>
-                      <Input id="email" type="email" placeholder="your@email.com" />
+                      <Label htmlFor="email">Email *</Label>
+                      <Input id="email" type="email" required value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="subject">Subject</Label>
-                    <Input id="subject" placeholder="How can we help?" />
+                    <Label>Category</Label>
+                    <Select value={form.category} onValueChange={(v) => setForm({ ...form, category: v })}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="general">General inquiry</SelectItem>
+                        <SelectItem value="support">Support</SelectItem>
+                        <SelectItem value="press">Press / Media</SelectItem>
+                        <SelectItem value="partnership">Partnership</SelectItem>
+                        <SelectItem value="billing">Billing</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="message">Message</Label>
-                    <Textarea
-                      id="message"
-                      placeholder="Tell us more..."
-                      rows={6}
-                    />
+                    <Label htmlFor="subject">Subject *</Label>
+                    <Input id="subject" required value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })} />
                   </div>
-                  <Button className="w-full bg-gold hover:bg-gold/90 text-navy">
+                  <div className="space-y-2">
+                    <Label htmlFor="message">Message *</Label>
+                    <Textarea id="message" required rows={6} value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} />
+                  </div>
+                  <Button type="submit" disabled={mutation.isPending} className="w-full bg-gold hover:bg-gold/90 text-navy">
                     <Send className="w-4 h-4 mr-2" />
-                    Send Message
+                    {mutation.isPending ? "Sending..." : "Send Message"}
                   </Button>
                 </form>
               </CardContent>
             </Card>
 
-            {/* Contact Info */}
             <div className="space-y-8">
               <div>
                 <h2 className="text-2xl font-serif font-bold mb-6">Get in Touch</h2>

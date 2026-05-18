@@ -1,34 +1,39 @@
+import { useQuery } from "@tanstack/react-query";
+import { Link } from "react-router-dom";
 import { Download, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/sections/Footer";
 
-const pressReleases = [
-  {
-    date: "December 2024",
-    title: "TimeBank Launches New Business Tier",
-    description: "Introducing team management and API access for organizations.",
-  },
-  {
-    date: "October 2024",
-    title: "TimeBank Reaches 50,000 Users",
-    description: "Milestone achievement as platform grows across Pakistan.",
-  },
-  {
-    date: "August 2024",
-    title: "TimeBank Secures Seed Funding",
-    description: "Local VC backs time exchange platform with significant investment.",
-  },
-];
-
-const mediaFeatures = [
-  { outlet: "Dawn", title: "The Rise of Time Banking in Pakistan" },
-  { outlet: "Express Tribune", title: "How Startups Are Reimagining Commerce" },
-  { outlet: "TechJuice", title: "TimeBank: A New Way to Exchange Skills" },
-];
-
 const Press = () => {
+  const { data: posts = [], isLoading } = useQuery({
+    queryKey: ["press-posts"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("blog_posts")
+        .select("id,title,slug,excerpt,published_at,category")
+        .eq("status", "published")
+        .ilike("category", "press")
+        .order("published_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: mediaKit } = useQuery({
+    queryKey: ["media-kit"],
+    queryFn: async () => {
+      const { data } = await supabase.from("platform_settings").select("value").eq("key", "media_kit").maybeSingle();
+      return (data?.value as { url?: string; name?: string }) ?? null;
+    },
+  });
+
+  const hasMediaKit = !!mediaKit?.url;
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -44,68 +49,68 @@ const Press = () => {
           </div>
 
           <div className="grid lg:grid-cols-2 gap-12">
-            {/* Press Releases */}
             <div>
               <h2 className="text-2xl font-serif font-bold mb-6">Press Releases</h2>
               <div className="space-y-4">
-                {pressReleases.map((release) => (
-                  <Card key={release.title}>
-                    <CardHeader>
-                      <CardDescription>{release.date}</CardDescription>
-                      <CardTitle className="text-lg">{release.title}</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-muted-foreground mb-4">{release.description}</p>
-                      <Button variant="link" className="p-0 text-gold">
-                        Read More <ExternalLink className="w-4 h-4 ml-1" />
-                      </Button>
-                    </CardContent>
-                  </Card>
-                ))}
+                {isLoading ? (
+                  <Skeleton className="h-32 w-full" />
+                ) : posts.length === 0 ? (
+                  <Card><CardContent className="py-12 text-center text-muted-foreground">No press releases yet.</CardContent></Card>
+                ) : (
+                  posts.map((p) => (
+                    <Card key={p.id}>
+                      <CardHeader>
+                        <CardDescription>{p.published_at ? new Date(p.published_at).toLocaleDateString() : ""}</CardDescription>
+                        <CardTitle className="text-lg">{p.title}</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        {p.excerpt && <p className="text-muted-foreground mb-4">{p.excerpt}</p>}
+                        <Link to={`/blog/${p.slug}`}>
+                          <Button variant="link" className="p-0 text-gold">
+                            Read More <ExternalLink className="w-4 h-4 ml-1" />
+                          </Button>
+                        </Link>
+                      </CardContent>
+                    </Card>
+                  ))
+                )}
               </div>
             </div>
 
-            {/* Media Kit & Features */}
             <div className="space-y-8">
               <div className="p-8 rounded-2xl bg-card border border-border">
                 <h2 className="text-2xl font-serif font-bold mb-4">Media Kit</h2>
                 <p className="text-muted-foreground mb-6">
                   Download our brand assets, logos, and company information.
                 </p>
-                <Button className="bg-gold hover:bg-gold/90 text-navy">
-                  <Download className="w-4 h-4 mr-2" />
-                  Download Media Kit
-                </Button>
+                {hasMediaKit ? (
+                  <Button asChild className="bg-gold hover:bg-gold/90 text-navy">
+                    <a href={mediaKit!.url} target="_blank" rel="noopener noreferrer" download>
+                      <Download className="w-4 h-4 mr-2" />
+                      Download Media Kit
+                    </a>
+                  </Button>
+                ) : (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="inline-block cursor-not-allowed">
+                        <Button disabled className="pointer-events-none opacity-60">
+                          <Download className="w-4 h-4 mr-2" />
+                          Download Media Kit
+                        </Button>
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent>Media kit not available</TooltipContent>
+                  </Tooltip>
+                )}
               </div>
 
-              <div>
-                <h2 className="text-2xl font-serif font-bold mb-6">Featured In</h2>
-                <div className="space-y-3">
-                  {mediaFeatures.map((feature) => (
-                    <div
-                      key={feature.title}
-                      className="flex items-center justify-between p-4 rounded-lg bg-card border border-border"
-                    >
-                      <div>
-                        <span className="font-semibold text-gold">{feature.outlet}</span>
-                        <p className="text-muted-foreground text-sm">{feature.title}</p>
-                      </div>
-                      <ExternalLink className="w-5 h-5 text-muted-foreground" />
-                    </div>
-                  ))}
-                </div>
+              <div className="p-8 rounded-2xl bg-muted text-center">
+                <h3 className="text-xl font-semibold mb-2">Media Inquiries</h3>
+                <p className="text-muted-foreground mb-4">For press inquiries, please contact our communications team.</p>
+                <Link to="/contact" className="text-gold hover:underline">Contact us</Link>
               </div>
             </div>
-          </div>
-
-          <div className="mt-16 text-center p-8 rounded-2xl bg-muted">
-            <h3 className="text-xl font-semibold mb-2">Media Inquiries</h3>
-            <p className="text-muted-foreground mb-4">
-              For press inquiries, please contact our communications team.
-            </p>
-            <a href="mailto:press@timebank.com" className="text-gold hover:underline">
-              press@timebank.com
-            </a>
           </div>
         </div>
       </main>

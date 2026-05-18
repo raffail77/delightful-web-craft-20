@@ -20,6 +20,7 @@ import About from "./pages/About";
 import Careers from "./pages/Careers";
 import Press from "./pages/Press";
 import Blog from "./pages/Blog";
+import BlogPost from "./pages/BlogPost";
 import HelpCenter from "./pages/HelpCenter";
 import Contact from "./pages/Contact";
 import Community from "./pages/Community";
@@ -39,6 +40,9 @@ import AdminTransactions from "./pages/admin/AdminTransactions";
 import AdminReviews from "./pages/admin/AdminReviews";
 import AdminChatbot from "./pages/admin/AdminChatbot";
 import AdminSettings from "./pages/admin/AdminSettings";
+import AdminCareers from "./pages/admin/AdminCareers";
+import AdminBlog from "./pages/admin/AdminBlog";
+import AdminMessages from "./pages/admin/AdminMessages";
 
 const queryClient = new QueryClient();
 
@@ -68,6 +72,7 @@ const App = () => (
             <Route path="/careers" element={<Careers />} />
             <Route path="/press" element={<Press />} />
             <Route path="/blog" element={<Blog />} />
+            <Route path="/blog/:slug" element={<BlogPost />} />
             <Route path="/help" element={<HelpCenter />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/community" element={<Community />} />
@@ -85,6 +90,9 @@ const App = () => (
               <Route path="reviews" element={<AdminReviews />} />
               <Route path="chatbot" element={<AdminChatbot />} />
               <Route path="settings" element={<AdminSettings />} />
+              <Route path="careers" element={<AdminCareers />} />
+              <Route path="blog" element={<AdminBlog />} />
+              <Route path="messages" element={<AdminMessages />} />
             </Route>
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
