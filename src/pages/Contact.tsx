@@ -38,7 +38,8 @@ const Contact = () => {
       if (Date.now() - last < 60_000) throw new Error("Please wait a minute before sending another message.");
       const parsed = schema.parse(form);
       const { data: userData } = await supabase.auth.getUser();
-      const { error } = await supabase.from("contact_messages").insert({ ...parsed, user_id: userData.user?.id });
+      const payload = { ...parsed, user_id: userData.user?.id ?? null };
+      const { error } = await supabase.from("contact_messages").insert(payload);
       if (error) throw error;
       localStorage.setItem(RATE_KEY, String(Date.now()));
     },
