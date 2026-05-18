@@ -211,13 +211,13 @@ function ApplyDialog({ job, open, onClose }: { job: Job; open: boolean; onClose:
       const { data: userData } = await supabase.auth.getUser();
       const { error } = await supabase.from("job_applications").insert({
         job_id: job.id,
-        user_id: userData.user?.id,
+        user_id: userData.user?.id ?? null,
         full_name: parsed.full_name,
         email: parsed.email,
         phone: parsed.phone || null,
         cover_letter: parsed.cover_letter || null,
         resume_url,
-      });
+      } as any);
       if (error) throw error;
     },
     onSuccess: () => {
