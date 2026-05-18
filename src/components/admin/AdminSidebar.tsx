@@ -8,6 +8,9 @@ import {
   LayoutDashboard,
   Shield,
   Settings,
+  GraduationCap,
+  Newspaper,
+  Mail,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -30,6 +33,9 @@ const menuItems = [
   { title: "Contracts", url: "/admin/contracts", icon: FileText },
   { title: "Transactions", url: "/admin/transactions", icon: CreditCard },
   { title: "Reviews", url: "/admin/reviews", icon: Star },
+  { title: "Careers", url: "/admin/careers", icon: GraduationCap },
+  { title: "Blog & Press", url: "/admin/blog", icon: Newspaper },
+  { title: "Contact Inbox", url: "/admin/messages", icon: Mail },
   { title: "Chatbot Logs", url: "/admin/chatbot", icon: MessageSquare },
   { title: "Settings", url: "/admin/settings", icon: Settings },
 ];
