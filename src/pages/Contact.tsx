@@ -39,7 +39,7 @@ const Contact = () => {
       const parsed = schema.parse(form);
       const { data: userData } = await supabase.auth.getUser();
       const payload = { ...parsed, user_id: userData.user?.id ?? null };
-      const { error } = await supabase.from("contact_messages").insert(payload);
+      const { error } = await supabase.from("contact_messages").insert(payload as any);
       if (error) throw error;
       localStorage.setItem(RATE_KEY, String(Date.now()));
     },
