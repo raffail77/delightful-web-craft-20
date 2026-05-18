@@ -211,7 +211,7 @@ function ApplyDialog({ job, open, onClose }: { job: Job; open: boolean; onClose:
       const { data: userData } = await supabase.auth.getUser();
       const { error } = await supabase.from("job_applications").insert({
         job_id: job.id,
-        user_id: userData.user?.id ?? null,
+        user_id: userData.user?.id,
         full_name: parsed.full_name,
         email: parsed.email,
         phone: parsed.phone || null,
