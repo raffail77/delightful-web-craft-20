@@ -285,8 +285,8 @@ const MessagingDialog = ({
               </div>
             </TabsContent>
 
-            <TabsContent value="contracts" className="flex-1 min-h-0 mt-0 px-6 pb-6">
-              <ScrollArea className="h-full">
+            <TabsContent value="contracts" className="flex-1 min-h-0 mt-0 pb-6 data-[state=active]:flex data-[state=active]:flex-col">
+              <ScrollArea className="flex-1 min-h-0 px-6">
                 <div className="space-y-3 py-4">
                   {contractsLoading ? (
                     <div className="text-center text-muted-foreground py-8">
