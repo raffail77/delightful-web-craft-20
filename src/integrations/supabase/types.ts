@@ -396,6 +396,87 @@ export type Database = {
         }
         Relationships: []
       }
+      help_articles: {
+        Row: {
+          category: string
+          content: string
+          created_at: string
+          created_by: string | null
+          excerpt: string | null
+          id: string
+          slug: string
+          sort_order: number
+          status: string
+          title: string
+          updated_at: string
+          view_count: number
+        }
+        Insert: {
+          category: string
+          content: string
+          created_at?: string
+          created_by?: string | null
+          excerpt?: string | null
+          id?: string
+          slug: string
+          sort_order?: number
+          status?: string
+          title: string
+          updated_at?: string
+          view_count?: number
+        }
+        Update: {
+          category?: string
+          content?: string
+          created_at?: string
+          created_by?: string | null
+          excerpt?: string | null
+          id?: string
+          slug?: string
+          sort_order?: number
+          status?: string
+          title?: string
+          updated_at?: string
+          view_count?: number
+        }
+        Relationships: []
+      }
+      incidents: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          resolved_at: string | null
+          severity: string
+          started_at: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          resolved_at?: string | null
+          severity?: string
+          started_at?: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          resolved_at?: string | null
+          severity?: string
+          started_at?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       job_applications: {
         Row: {
           cover_letter: string | null
@@ -500,6 +581,39 @@ export type Database = {
         }
         Relationships: []
       }
+      legal_documents: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          slug: string
+          title: string
+          updated_at: string
+          updated_by: string | null
+          version: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          slug: string
+          title: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          slug?: string
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: string
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           content: string
@@ -598,6 +712,51 @@ export type Database = {
           title?: string
           updated_at?: string | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      pricing_plans: {
+        Row: {
+          created_at: string
+          cta_label: string
+          description: string | null
+          features: Json
+          id: string
+          is_active: boolean
+          is_popular: boolean
+          name: string
+          price_monthly: number
+          price_yearly: number | null
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          cta_label?: string
+          description?: string | null
+          features?: Json
+          id?: string
+          is_active?: boolean
+          is_popular?: boolean
+          name: string
+          price_monthly?: number
+          price_yearly?: number | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          cta_label?: string
+          description?: string | null
+          features?: Json
+          id?: string
+          is_active?: boolean
+          is_popular?: boolean
+          name?: string
+          price_monthly?: number
+          price_yearly?: number | null
+          sort_order?: number
+          updated_at?: string
         }
         Relationships: []
       }
@@ -770,6 +929,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      service_status: {
+        Row: {
+          id: string
+          name: string
+          sort_order: number
+          status: string
+          updated_at: string
+          uptime_percentage: number
+        }
+        Insert: {
+          id?: string
+          name: string
+          sort_order?: number
+          status?: string
+          updated_at?: string
+          uptime_percentage?: number
+        }
+        Update: {
+          id?: string
+          name?: string
+          sort_order?: number
+          status?: string
+          updated_at?: string
+          uptime_percentage?: number
+        }
+        Relationships: []
       }
       services: {
         Row: {
@@ -1179,6 +1365,7 @@ export type Database = {
         Returns: boolean
       }
       increment_blog_view: { Args: { p_slug: string }; Returns: undefined }
+      increment_help_view: { Args: { p_slug: string }; Returns: undefined }
       pay_contract_stripe: {
         Args: {
           p_contract_id: string

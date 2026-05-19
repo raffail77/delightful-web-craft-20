@@ -1,42 +1,53 @@
-import { Book, CreditCard, MessageCircle, Search, Shield, User } from "lucide-react";
+import { useState, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Skeleton } from "@/components/ui/skeleton";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/sections/Footer";
-
-const categories = [
-  { icon: User, title: "Account", description: "Profile, settings, and security" },
-  { icon: CreditCard, title: "Time Credits", description: "Earning, spending, and balance" },
-  { icon: MessageCircle, title: "Messaging", description: "Communication and notifications" },
-  { icon: Shield, title: "Safety", description: "Trust, verification, and disputes" },
-  { icon: Book, title: "Getting Started", description: "Tutorials and guides" },
-];
-
-const faqs = [
-  {
-    question: "How do time credits work?",
-    answer: "Time credits represent hours of service. When you provide a service, you earn credits based on the hourly rate. You can then spend these credits to receive services from others.",
-  },
-  {
-    question: "How do I start offering services?",
-    answer: "Go to your profile and click 'Add Service'. Fill in the details about your skill, set your hourly credit rate, and publish. Your service will appear in the marketplace.",
-  },
-  {
-    question: "What if there's a dispute with a service?",
-    answer: "Contact us through the Help Center. We have a dispute resolution process that ensures fair outcomes for both parties.",
-  },
-  {
-    question: "Can I convert time credits to cash?",
-    answer: "Currently, time credits cannot be converted to cash. They are designed to facilitate skill exchange within our community.",
-  },
-  {
-    question: "How is my data protected?",
-    answer: "We use industry-standard encryption and security practices. Your personal information is never shared without your consent.",
-  },
-];
+import { supabase } from "@/integrations/supabase/client";
 
 const HelpCenter = () => {
+  const [search, setSearch] = useState("");
+  const [activeCat, setActiveCat] = useState<string | null>(null);
+
+  const { data: articles = [], isLoading } = useQuery({
+    queryKey: ["help-articles"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("help_articles")
+        .select("*")
+        .eq("status", "published")
+        .order("sort_order");
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const categories = useMemo(
+    () => Array.from(new Set(articles.map((a: any) => a.category))),
+    [articles]
+  );
+
+  const filtered = useMemo(() => {
+    const q = search.toLowerCase().trim();
+    return articles.filter((a: any) => {
+      if (activeCat && a.category !== activeCat) return false;
+      if (!q) return true;
+      return (
+        a.title.toLowerCase().includes(q) ||
+        a.excerpt?.toLowerCase().includes(q) ||
+        a.content.toLowerCase().includes(q)
+      );
+    });
+  }, [articles, search, activeCat]);
+
+  const onOpenArticle = (slug: string) => {
+    supabase.rpc("increment_help_view", { p_slug: slug });
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -53,37 +64,62 @@ const HelpCenter = () => {
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
               <Input
                 placeholder="Search for help..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
                 className="pl-12 h-12 text-lg"
               />
             </div>
           </div>
 
-          {/* Categories */}
-          <div className="grid md:grid-cols-3 lg:grid-cols-5 gap-4 mb-16">
-            {categories.map((cat) => (
-              <Card key={cat.title} className="hover:border-gold transition-colors cursor-pointer">
-                <CardHeader className="text-center">
-                  <cat.icon className="w-8 h-8 mx-auto mb-2 text-gold" />
-                  <CardTitle className="text-lg">{cat.title}</CardTitle>
-                  <CardDescription className="text-sm">{cat.description}</CardDescription>
-                </CardHeader>
-              </Card>
-            ))}
-          </div>
-
-          {/* FAQs */}
-          <div className="max-w-3xl mx-auto">
-            <h2 className="text-2xl font-serif font-bold text-center mb-8">Frequently Asked Questions</h2>
-            <Accordion type="single" collapsible className="space-y-2">
-              {faqs.map((faq, index) => (
-                <AccordionItem key={index} value={`item-${index}`} className="border rounded-lg px-4">
-                  <AccordionTrigger className="text-left">{faq.question}</AccordionTrigger>
-                  <AccordionContent className="text-muted-foreground">
-                    {faq.answer}
-                  </AccordionContent>
-                </AccordionItem>
+          {categories.length > 0 && (
+            <div className="flex flex-wrap gap-2 justify-center mb-8">
+              <Badge
+                variant={!activeCat ? "default" : "outline"}
+                className="cursor-pointer"
+                onClick={() => setActiveCat(null)}
+              >
+                All
+              </Badge>
+              {categories.map((cat) => (
+                <Badge
+                  key={cat}
+                  variant={activeCat === cat ? "default" : "outline"}
+                  className="cursor-pointer"
+                  onClick={() => setActiveCat(cat)}
+                >
+                  {cat}
+                </Badge>
               ))}
-            </Accordion>
+            </div>
+          )}
+
+          <div className="max-w-3xl mx-auto">
+            {isLoading ? (
+              <div className="space-y-2">
+                {[1, 2, 3].map((i) => <Skeleton key={i} className="h-14" />)}
+              </div>
+            ) : filtered.length === 0 ? (
+              <p className="text-center text-muted-foreground py-12">No articles found.</p>
+            ) : (
+              <Accordion type="single" collapsible className="space-y-2" onValueChange={(v) => {
+                const article = filtered.find((a: any) => a.id === v);
+                if (article) onOpenArticle(article.slug);
+              }}>
+                {filtered.map((article: any) => (
+                  <AccordionItem key={article.id} value={article.id} className="border rounded-lg px-4">
+                    <AccordionTrigger className="text-left">
+                      <div>
+                        <div>{article.title}</div>
+                        <div className="text-xs text-muted-foreground mt-1">{article.category}</div>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="text-muted-foreground whitespace-pre-wrap">
+                      {article.content}
+                    </AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
+            )}
           </div>
         </div>
       </main>
