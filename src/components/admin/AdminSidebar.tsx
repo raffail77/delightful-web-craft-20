@@ -11,6 +11,10 @@ import {
   GraduationCap,
   Newspaper,
   Mail,
+  DollarSign,
+  HelpCircle,
+  Activity,
+  Scale,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -36,6 +40,10 @@ const menuItems = [
   { title: "Careers", url: "/admin/careers", icon: GraduationCap },
   { title: "Blog & Press", url: "/admin/blog", icon: Newspaper },
   { title: "Contact Inbox", url: "/admin/messages", icon: Mail },
+  { title: "Pricing Plans", url: "/admin/pricing", icon: DollarSign },
+  { title: "Help Center", url: "/admin/help", icon: HelpCircle },
+  { title: "System Status", url: "/admin/status", icon: Activity },
+  { title: "Legal Docs", url: "/admin/legal", icon: Scale },
   { title: "Chatbot Logs", url: "/admin/chatbot", icon: MessageSquare },
   { title: "Settings", url: "/admin/settings", icon: Settings },
 ];

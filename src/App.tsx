@@ -43,6 +43,10 @@ import AdminSettings from "./pages/admin/AdminSettings";
 import AdminCareers from "./pages/admin/AdminCareers";
 import AdminBlog from "./pages/admin/AdminBlog";
 import AdminMessages from "./pages/admin/AdminMessages";
+import AdminPricing from "./pages/admin/AdminPricing";
+import AdminHelp from "./pages/admin/AdminHelp";
+import AdminStatus from "./pages/admin/AdminStatus";
+import AdminLegal from "./pages/admin/AdminLegal";
 
 const queryClient = new QueryClient();
 
@@ -93,6 +97,10 @@ const App = () => (
               <Route path="careers" element={<AdminCareers />} />
               <Route path="blog" element={<AdminBlog />} />
               <Route path="messages" element={<AdminMessages />} />
+              <Route path="pricing" element={<AdminPricing />} />
+              <Route path="help" element={<AdminHelp />} />
+              <Route path="status" element={<AdminStatus />} />
+              <Route path="legal" element={<AdminLegal />} />
             </Route>
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
