@@ -1,33 +1,44 @@
-import { Activity, CheckCircle, Clock } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { CheckCircle, Clock, AlertCircle, XCircle } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/sections/Footer";
+import { supabase } from "@/integrations/supabase/client";
 
-const services = [
-  { name: "Web Application", status: "operational", uptime: "99.99%" },
-  { name: "API", status: "operational", uptime: "99.95%" },
-  { name: "Database", status: "operational", uptime: "99.99%" },
-  { name: "Authentication", status: "operational", uptime: "99.98%" },
-  { name: "Messaging", status: "operational", uptime: "99.97%" },
-  { name: "Notifications", status: "operational", uptime: "99.94%" },
-];
+const statusColor = (s: string) =>
+  s === "operational" ? "bg-green-500"
+  : s === "degraded" ? "bg-yellow-500"
+  : s === "partial_outage" ? "bg-orange-500"
+  : "bg-red-500";
 
-const incidents = [
-  {
-    date: "Dec 20, 2024",
-    title: "Scheduled Maintenance",
-    description: "Planned maintenance completed successfully with no service interruption.",
-    status: "resolved",
-  },
-  {
-    date: "Dec 15, 2024",
-    title: "Minor API Latency",
-    description: "Increased API response times detected and resolved within 30 minutes.",
-    status: "resolved",
-  },
-];
+const statusLabel = (s: string) => s.replace(/_/g, " ");
 
 const Status = () => {
+  const { data: services = [], isLoading: lsv } = useQuery({
+    queryKey: ["service-status"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("service_status").select("*").order("sort_order");
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: incidents = [], isLoading: linc } = useQuery({
+    queryKey: ["incidents"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("incidents")
+        .select("*")
+        .order("started_at", { ascending: false })
+        .limit(10);
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const allOperational = services.every((s: any) => s.status === "operational");
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -37,83 +48,69 @@ const Status = () => {
             <h1 className="text-4xl md:text-5xl font-serif font-bold text-foreground mb-4">
               System <span className="text-gold">Status</span>
             </h1>
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-green-500/10 text-green-600">
-              <CheckCircle className="w-5 h-5" />
-              <span className="font-medium">All Systems Operational</span>
+            <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full ${
+              allOperational ? "bg-green-500/10 text-green-600" : "bg-yellow-500/10 text-yellow-600"
+            }`}>
+              {allOperational ? <CheckCircle className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
+              <span className="font-medium">
+                {allOperational ? "All Systems Operational" : "Some Systems Affected"}
+              </span>
             </div>
           </div>
 
-          {/* Service Status */}
           <div className="max-w-3xl mx-auto mb-16">
             <h2 className="text-2xl font-serif font-bold mb-6">Services</h2>
-            <div className="space-y-3">
-              {services.map((service) => (
-                <div
-                  key={service.name}
-                  className="flex items-center justify-between p-4 rounded-lg bg-card border border-border"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-3 h-3 rounded-full bg-green-500" />
-                    <span className="font-medium">{service.name}</span>
+            {lsv ? (
+              <div className="space-y-3">{[1,2,3,4].map(i => <Skeleton key={i} className="h-16" />)}</div>
+            ) : (
+              <div className="space-y-3">
+                {services.map((service: any) => (
+                  <div key={service.id} className="flex items-center justify-between p-4 rounded-lg bg-card border border-border">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-3 h-3 rounded-full ${statusColor(service.status)}`} />
+                      <span className="font-medium">{service.name}</span>
+                    </div>
+                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                      <span>{Number(service.uptime_percentage).toFixed(2)}% uptime</span>
+                      <span className="capitalize">{statusLabel(service.status)}</span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                    <span>{service.uptime} uptime</span>
-                    <span className="text-green-600 capitalize">{service.status}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Uptime Chart Placeholder */}
-          <div className="max-w-3xl mx-auto mb-16">
-            <h2 className="text-2xl font-serif font-bold mb-6">90-Day Uptime</h2>
-            <div className="p-8 rounded-2xl bg-card border border-border">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <Activity className="w-5 h-5 text-gold" />
-                  <span className="font-medium">Overall Uptime</span>
-                </div>
-                <span className="text-2xl font-bold text-green-600">99.97%</span>
-              </div>
-              <div className="flex gap-1">
-                {Array.from({ length: 90 }).map((_, i) => (
-                  <div
-                    key={i}
-                    className="flex-1 h-8 rounded-sm bg-green-500"
-                    title={`Day ${90 - i}: 100%`}
-                  />
                 ))}
               </div>
-              <div className="flex justify-between mt-2 text-xs text-muted-foreground">
-                <span>90 days ago</span>
-                <span>Today</span>
-              </div>
-            </div>
+            )}
           </div>
 
-          {/* Recent Incidents */}
           <div className="max-w-3xl mx-auto">
             <h2 className="text-2xl font-serif font-bold mb-6">Recent Incidents</h2>
-            <div className="space-y-4">
-              {incidents.map((incident) => (
-                <Card key={incident.title}>
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <CardDescription className="flex items-center gap-2">
-                        <Clock className="w-4 h-4" />
-                        {incident.date}
-                      </CardDescription>
-                      <span className="text-sm text-green-600 capitalize">{incident.status}</span>
-                    </div>
-                    <CardTitle className="text-lg">{incident.title}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-muted-foreground">{incident.description}</p>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+            {linc ? (
+              <Skeleton className="h-32" />
+            ) : incidents.length === 0 ? (
+              <p className="text-muted-foreground">No recent incidents reported.</p>
+            ) : (
+              <div className="space-y-4">
+                {incidents.map((incident: any) => (
+                  <Card key={incident.id}>
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <CardDescription className="flex items-center gap-2">
+                          <Clock className="w-4 h-4" />
+                          {new Date(incident.started_at).toLocaleDateString()}
+                        </CardDescription>
+                        <span className={`text-sm capitalize ${
+                          incident.status === "resolved" ? "text-green-600" : "text-yellow-600"
+                        }`}>
+                          {incident.status}
+                        </span>
+                      </div>
+                      <CardTitle className="text-lg">{incident.title}</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-muted-foreground">{incident.description}</p>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </main>
