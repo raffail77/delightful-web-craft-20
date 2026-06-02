@@ -38,7 +38,7 @@ const Profile = () => {
         // Viewing someone else's profile by slug or user_id
         // RLS will filter based on privacy settings
         const { data, error } = await supabase
-          .from("profiles")
+          .from("profiles_public")
           .select("user_id, profile_visibility")
           .or(`profile_slug.eq.${slug},user_id.eq.${slug}`)
           .maybeSingle();
