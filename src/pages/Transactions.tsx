@@ -83,7 +83,7 @@ export default function Transactions() {
       });
 
       const { data: profiles, error: profilesError } = await supabase
-        .from("profiles")
+        .from("profiles_public")
         .select("user_id, full_name, email")
         .in("user_id", Array.from(userIds));
 

@@ -36,25 +36,22 @@ export const useProfileData = (userId: string | undefined, isOwnProfile: boolean
     if (!userId) return;
 
     const { data, error } = await supabase
-      .from('profiles')
+      .from('profiles_public')
       .select('*')
       .eq('user_id', userId)
       .maybeSingle();
 
     if (!error && data) {
-      // For non-owner profiles, strip sensitive fields client-side
+      const profileData: any = { ...data };
+      // For non-owner profiles, the view already masks sensitive fields server-side.
+      // Add client-side defaults for fields the view doesn't include.
       if (!isOwnProfile) {
-        if (!data.show_email) data.email = null;
-        data.time_credits = 0;
-        data.earned_credits = 0;
-        data.bonus_credits = 0;
-        data.escrow_credits = 0;
-        data.stripe_connect_account_id = null;
-        data.stripe_connect_onboarding_complete = null;
-        data.is_suspended = null;
-        data.last_free_credits_at = null;
+        profileData.show_email = false;
+        profileData.show_location = true;
+        profileData.is_suspended = null;
+        profileData.last_free_credits_at = null;
       }
-      setProfile(data as Profile);
+      setProfile(profileData as Profile);
     }
   }, [userId, isOwnProfile]);
 

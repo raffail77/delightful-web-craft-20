@@ -59,7 +59,7 @@ const ContractCard = ({ contract, onAction }: ContractCardProps) => {
   useEffect(() => {
     const fetchName = async () => {
       const { data } = await supabase
-        .from("profiles").select("full_name")
+        .from("profiles_public").select("full_name")
         .eq("user_id", revieweeId).maybeSingle();
       if (data?.full_name) setOtherPartyName(data.full_name);
     };

@@ -121,7 +121,7 @@ const ServiceDetail = () => {
       { data: related },
     ] = await Promise.all([
       supabase
-        .from("profiles")
+        .from("profiles_public")
         .select("full_name, avatar_url, headline, bio, about, location, availability_status, skills, is_verified, response_time_hours, created_at")
         .eq("user_id", svc.user_id)
         .maybeSingle(),
@@ -170,7 +170,7 @@ const ServiceDetail = () => {
     if (reviewsData && reviewsData.length > 0) {
       const reviewerIds = reviewsData.map((r: any) => r.reviewer_id);
       const { data: reviewerProfiles } = await supabase
-        .from("profiles")
+        .from("profiles_public")
         .select("user_id, full_name, avatar_url")
         .in("user_id", reviewerIds);
 
@@ -186,7 +186,7 @@ const ServiceDetail = () => {
     // Related services with profiles
     if (related && related.length > 0) {
       const { data: relProfiles } = await supabase
-        .from("profiles")
+        .from("profiles_public")
         .select("user_id, full_name, avatar_url")
         .eq("user_id", svc.user_id);
       const p = relProfiles?.[0] || null;

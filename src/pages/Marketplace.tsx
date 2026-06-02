@@ -170,7 +170,7 @@ const Marketplace = () => {
 
     // Fetch profiles with avatar + headline, and reviews for ratings
     const [{ data: profilesData }, { data: reviewsData }] = await Promise.all([
-      supabase.from("profiles").select("user_id, full_name, avatar_url, headline").in("user_id", userIds),
+      supabase.from("profiles_public").select("user_id, full_name, avatar_url, headline").in("user_id", userIds),
       supabase.from("reviews").select("reviewee_id, rating"),
     ]);
 

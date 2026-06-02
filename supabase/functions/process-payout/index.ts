@@ -92,24 +92,53 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Get withdrawal details
-    const { data: withdrawal, error: wErr } = await adminSupabase
+    // Atomic lock: only one approval can flip pending -> processing
+    const { data: locked, error: lockErr } = await adminSupabase
       .from("withdrawal_requests")
-      .select("*")
+      .update({ status: "processing", processed_at: new Date().toISOString() })
       .eq("id", withdrawal_id)
-      .single();
+      .eq("status", "pending")
+      .select("*")
+      .maybeSingle();
 
-    if (wErr || !withdrawal) {
-      return new Response(JSON.stringify({ error: "Withdrawal not found" }), {
-        status: 404,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+    if (lockErr) {
+      return new Response(JSON.stringify({ error: "Failed to lock withdrawal" }), {
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    if (withdrawal.status !== "pending") {
-      return new Response(JSON.stringify({ error: "Withdrawal already processed" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+    if (!locked) {
+      return new Response(JSON.stringify({ error: "Withdrawal not found or already being processed" }), {
+        status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const withdrawal = locked;
+
+    // Recompute expected net amount server-side from platform_settings — never trust client-supplied amounts.
+    const { data: settingsRows } = await adminSupabase
+      .from("platform_settings")
+      .select("key,value")
+      .in("key", ["payout_rate_usd", "withdrawal_fee_percent"]);
+    const settings: Record<string, number> = {};
+    (settingsRows || []).forEach((r: any) => {
+      const v = typeof r.value === "string" ? JSON.parse(r.value) : r.value;
+      settings[r.key] = parseFloat(v);
+    });
+    const payoutRate = settings.payout_rate_usd ?? 1.5;
+    const feePercent = settings.withdrawal_fee_percent ?? 5;
+    const expectedUsd = withdrawal.credits_amount * payoutRate;
+    const expectedFee = expectedUsd * (feePercent / 100);
+    const expectedNet = Math.max(0, expectedUsd - expectedFee);
+
+    if (Math.abs(Number(withdrawal.net_amount) - expectedNet) > 0.01) {
+      // Tampered amount — revert lock and reject
+      await adminSupabase
+        .from("withdrawal_requests")
+        .update({ status: "rejected", notes: `Amount mismatch. Expected $${expectedNet.toFixed(2)}, got $${Number(withdrawal.net_amount).toFixed(2)}` })
+        .eq("id", withdrawal_id);
+      return new Response(JSON.stringify({ error: "Withdrawal amount does not match server calculation", rejected: true }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
@@ -140,7 +169,7 @@ Deno.serve(async (req) => {
       apiVersion: "2026-04-22.dahlia",
     });
 
-    const netAmountCents = Math.round(Number(withdrawal.net_amount) * 100);
+    const netAmountCents = Math.round(expectedNet * 100);
 
     const transfer = await stripe.transfers.create({
       amount: netAmountCents,
@@ -153,6 +182,7 @@ Deno.serve(async (req) => {
       },
     });
     const transferId = transfer.id;
+
 
     // Deduct credits from profile
     await adminSupabase

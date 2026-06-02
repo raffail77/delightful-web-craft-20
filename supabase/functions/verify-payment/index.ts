@@ -65,15 +65,25 @@ Deno.serve(async (req) => {
         const session = await stripe.checkout.sessions.retrieve(purchase.stripe_session_id);
 
         if (session.payment_status === "paid") {
-          // Update purchase to completed
-          await adminClient
+          // Atomic: only credit if THIS call flips status pending -> completed.
+          const { data: locked } = await adminClient
             .from("credit_purchases")
             .update({
               status: "completed",
               stripe_payment_intent_id: typeof session.payment_intent === 'string' ? session.payment_intent : null,
               completed_at: new Date().toISOString(),
             })
-            .eq("id", purchase.id);
+            .eq("id", purchase.id)
+            .eq("status", "pending")
+            .select("id")
+            .maybeSingle();
+
+          if (!locked) {
+            console.log(`Purchase ${purchase.id} already credited by webhook, skipping`);
+            continue;
+          }
+
+
 
           // Add credits to user
           const { data: profile } = await adminClient

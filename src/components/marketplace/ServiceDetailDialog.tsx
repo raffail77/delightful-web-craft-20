@@ -101,7 +101,7 @@ const ServiceDetailDialog = ({
 
     const [{ data: profile }, { data: skills }, { data: reviews }, { count }] = await Promise.all([
       supabase
-        .from("profiles")
+        .from("profiles_public")
         .select("full_name, avatar_url, headline, bio, about, location, availability_status, skills, is_verified, response_time_hours")
         .eq("user_id", userId)
         .maybeSingle(),
@@ -131,7 +131,7 @@ const ServiceDetailDialog = ({
     if (reviews && reviews.length > 0) {
       const reviewerIds = reviews.map((r: any) => r.reviewer_id);
       const { data: reviewerProfiles } = await supabase
-        .from("profiles")
+        .from("profiles_public")
         .select("user_id, full_name, avatar_url")
         .in("user_id", reviewerIds);
 
