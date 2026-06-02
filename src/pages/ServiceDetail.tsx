@@ -186,7 +186,7 @@ const ServiceDetail = () => {
     // Related services with profiles
     if (related && related.length > 0) {
       const { data: relProfiles } = await supabase
-        .from("profiles")
+        .from("profiles_public")
         .select("user_id, full_name, avatar_url")
         .eq("user_id", svc.user_id);
       const p = relProfiles?.[0] || null;
