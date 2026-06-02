@@ -10,12 +10,24 @@ CREATE TABLE public.certifications (
   created_at timestamptz DEFAULT now()
 );
 
+GRANT SELECT ON public.certifications TO anon;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.certifications TO authenticated;
+GRANT ALL ON public.certifications TO service_role;
+
 ALTER TABLE public.certifications ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Anyone can view certifications" ON public.certifications FOR SELECT USING (true);
-CREATE POLICY "Users can manage their own certifications" ON public.certifications
-  FOR INSERT WITH CHECK (auth.uid() = user_id);
-CREATE POLICY "Users can update their own certifications" ON public.certifications
-  FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Anyone can view certifications" ON public.certifications
+  FOR SELECT
+  USING (true);
+
 CREATE POLICY "Users can delete their own certifications" ON public.certifications
-  FOR DELETE USING (auth.uid() = user_id);
+  FOR DELETE
+  USING ((auth.uid() = user_id));
+
+CREATE POLICY "Users can manage their own certifications" ON public.certifications
+  FOR INSERT
+  WITH CHECK ((auth.uid() = user_id));
+
+CREATE POLICY "Users can update their own certifications" ON public.certifications
+  FOR UPDATE
+  USING ((auth.uid() = user_id));
