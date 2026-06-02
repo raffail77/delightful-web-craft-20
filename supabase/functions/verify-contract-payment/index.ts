@@ -73,7 +73,7 @@ Deno.serve(async (req) => {
     });
   } catch (error: any) {
     console.error("Verify contract payment error:", error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: "Internal server error" }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 400,
     });
