@@ -170,7 +170,7 @@ const ServiceDetail = () => {
     if (reviewsData && reviewsData.length > 0) {
       const reviewerIds = reviewsData.map((r: any) => r.reviewer_id);
       const { data: reviewerProfiles } = await supabase
-        .from("profiles")
+        .from("profiles_public")
         .select("user_id, full_name, avatar_url")
         .in("user_id", reviewerIds);
 
