@@ -11,14 +11,13 @@ CREATE OR REPLACE FUNCTION public.update_updated_at_column()
  RETURNS trigger
  LANGUAGE plpgsql
  SET search_path TO 'public'
-AS $function$
+AS $function$;
 BEGIN
   NEW.updated_at = now();
   RETURN NEW;
 END;
-$function$
+$function$;
 
-;
 
 -- ----------------------------------------------------------------------------
 -- has_role
@@ -28,16 +27,15 @@ CREATE OR REPLACE FUNCTION public.has_role(_user_id uuid, _role app_role)
  LANGUAGE sql
  STABLE SECURITY DEFINER
  SET search_path TO 'public'
-AS $function$
+AS $function$;
   SELECT EXISTS (
     SELECT 1
     FROM public.user_roles
     WHERE user_id = _user_id
       AND role = _role
   )
-$function$
+$function$;
 
-;
 
 -- ----------------------------------------------------------------------------
 -- handle_new_user
@@ -47,7 +45,7 @@ CREATE OR REPLACE FUNCTION public.handle_new_user()
  LANGUAGE plpgsql
  SECURITY DEFINER
  SET search_path TO 'public'
-AS $function$
+AS $function$;
 BEGIN
   INSERT INTO public.profiles (user_id, email, full_name, time_credits)
   VALUES (
@@ -58,9 +56,8 @@ BEGIN
   );
   RETURN NEW;
 END;
-$function$
+$function$;
 
-;
 
 -- ----------------------------------------------------------------------------
 -- generate_profile_slug
@@ -70,7 +67,7 @@ CREATE OR REPLACE FUNCTION public.generate_profile_slug()
  LANGUAGE plpgsql
  SECURITY DEFINER
  SET search_path TO 'public'
-AS $function$
+AS $function$;
 DECLARE
   base_slug text;
   new_slug text;
@@ -89,9 +86,8 @@ BEGIN
   END IF;
   RETURN NEW;
 END;
-$function$
+$function$;
 
-;
 
 -- ----------------------------------------------------------------------------
 -- check_message_rate_limit
@@ -101,7 +97,7 @@ CREATE OR REPLACE FUNCTION public.check_message_rate_limit()
  LANGUAGE plpgsql
  SECURITY DEFINER
  SET search_path TO 'public'
-AS $function$
+AS $function$;
 DECLARE
   recent_count INTEGER;
 BEGIN
@@ -116,9 +112,8 @@ BEGIN
   
   RETURN NEW;
 END;
-$function$
+$function$;
 
-;
 
 -- ----------------------------------------------------------------------------
 -- update_endorsement_count
@@ -128,7 +123,7 @@ CREATE OR REPLACE FUNCTION public.update_endorsement_count()
  LANGUAGE plpgsql
  SECURITY DEFINER
  SET search_path TO 'public'
-AS $function$
+AS $function$;
 BEGIN
   IF TG_OP = 'INSERT' THEN
     UPDATE user_skills SET endorsement_count = endorsement_count + 1 WHERE id = NEW.skill_id;
@@ -137,9 +132,8 @@ BEGIN
   END IF;
   RETURN NULL;
 END;
-$function$
+$function$;
 
-;
 
 -- ----------------------------------------------------------------------------
 -- transfer_credits
@@ -149,7 +143,7 @@ CREATE OR REPLACE FUNCTION public.transfer_credits(p_sender_id uuid, p_receiver_
  LANGUAGE plpgsql
  SECURITY DEFINER
  SET search_path TO 'public'
-AS $function$
+AS $function$;
 DECLARE
   v_sender_balance INTEGER;
   v_transaction_id UUID;
@@ -184,9 +178,8 @@ BEGIN
   
   RETURN v_transaction_id;
 END;
-$function$
+$function$;
 
-;
 
 -- ----------------------------------------------------------------------------
 -- accept_contract_with_escrow
@@ -196,7 +189,7 @@ CREATE OR REPLACE FUNCTION public.accept_contract_with_escrow(p_contract_id uuid
  LANGUAGE plpgsql
  SECURITY DEFINER
  SET search_path TO 'public'
-AS $function$
+AS $function$;
 DECLARE
   v_contract contracts;
   v_client_balance INTEGER;
@@ -269,9 +262,8 @@ BEGIN
     );
   END IF;
 END;
-$function$
+$function$;
 
-;
 
 -- ----------------------------------------------------------------------------
 -- pay_contract_stripe
@@ -281,7 +273,7 @@ CREATE OR REPLACE FUNCTION public.pay_contract_stripe(p_contract_id uuid, p_user
  LANGUAGE plpgsql
  SECURITY DEFINER
  SET search_path TO 'public'
-AS $function$
+AS $function$;
 DECLARE
   v_contract contracts;
 BEGIN
@@ -317,9 +309,8 @@ BEGIN
     'escrow_locked', true
   );
 END;
-$function$
+$function$;
 
-;
 
 -- ----------------------------------------------------------------------------
 -- cancel_contract_with_escrow
@@ -329,7 +320,7 @@ CREATE OR REPLACE FUNCTION public.cancel_contract_with_escrow(p_contract_id uuid
  LANGUAGE plpgsql
  SECURITY DEFINER
  SET search_path TO 'public'
-AS $function$
+AS $function$;
 DECLARE
   v_contract contracts;
 BEGIN
@@ -367,9 +358,8 @@ BEGIN
 
   RETURN jsonb_build_object('success', true, 'message', 'Contract cancelled and escrow refunded');
 END;
-$function$
+$function$;
 
-;
 
 -- ----------------------------------------------------------------------------
 -- auto_cancel_unpaid_contracts
@@ -379,7 +369,7 @@ CREATE OR REPLACE FUNCTION public.auto_cancel_unpaid_contracts()
  LANGUAGE plpgsql
  SECURITY DEFINER
  SET search_path TO 'public'
-AS $function$
+AS $function$;
 DECLARE
   v_count INTEGER;
 BEGIN
@@ -392,9 +382,8 @@ BEGIN
   GET DIAGNOSTICS v_count = ROW_COUNT;
   RETURN v_count;
 END;
-$function$
+$function$;
 
-;
 
 -- ----------------------------------------------------------------------------
 -- complete_contract
@@ -404,7 +393,7 @@ CREATE OR REPLACE FUNCTION public.complete_contract(p_contract_id uuid, p_user_i
  LANGUAGE plpgsql
  SECURITY DEFINER
  SET search_path TO 'public'
-AS $function$
+AS $function$;
 DECLARE
   v_contract contracts;
   v_is_provider BOOLEAN;
@@ -475,9 +464,8 @@ BEGIN
     'waiting_for', CASE WHEN v_is_provider THEN 'client' ELSE 'provider' END,
     'message', 'Waiting for other party to confirm completion');
 END;
-$function$
+$function$;
 
-;
 
 -- ----------------------------------------------------------------------------
 -- increment_blog_view
@@ -487,11 +475,10 @@ CREATE OR REPLACE FUNCTION public.increment_blog_view(p_slug text)
  LANGUAGE sql
  SECURITY DEFINER
  SET search_path TO 'public'
-AS $function$
+AS $function$;
   UPDATE public.blog_posts SET view_count = view_count + 1 WHERE slug = p_slug AND status = 'published';
-$function$
+$function$;
 
-;
 
 -- ----------------------------------------------------------------------------
 -- increment_help_view
@@ -501,9 +488,8 @@ CREATE OR REPLACE FUNCTION public.increment_help_view(p_slug text)
  LANGUAGE sql
  SECURITY DEFINER
  SET search_path TO 'public'
-AS $function$
+AS $function$;
   UPDATE public.help_articles SET view_count = view_count + 1 WHERE slug = p_slug AND status = 'published';
-$function$
+$function$;
 
-;
 

@@ -57,6 +57,5 @@ AS
         END AS stripe_connect_onboarding_complete
    FROM profiles
   WHERE profile_visibility = 'public'::text OR profile_visibility = 'members'::text AND auth.uid() IS NOT NULL OR auth.uid() = user_id OR has_role(auth.uid(), 'admin'::app_role);
-;
 
 GRANT SELECT ON public.profiles_public TO anon, authenticated;
