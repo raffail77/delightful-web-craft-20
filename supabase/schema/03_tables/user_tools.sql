@@ -6,12 +6,24 @@ CREATE TABLE public.user_tools (
   created_at timestamptz DEFAULT now()
 );
 
+GRANT SELECT ON public.user_tools TO anon;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.user_tools TO authenticated;
+GRANT ALL ON public.user_tools TO service_role;
+
 ALTER TABLE public.user_tools ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Anyone can view user tools" ON public.user_tools FOR SELECT USING (true);
-CREATE POLICY "Users can manage their own tools" ON public.user_tools
-  FOR INSERT WITH CHECK (auth.uid() = user_id);
-CREATE POLICY "Users can update their own tools" ON public.user_tools
-  FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Anyone can view user tools" ON public.user_tools
+  FOR SELECT
+  USING (true);
+
 CREATE POLICY "Users can delete their own tools" ON public.user_tools
-  FOR DELETE USING (auth.uid() = user_id);
+  FOR DELETE
+  USING ((auth.uid() = user_id));
+
+CREATE POLICY "Users can manage their own tools" ON public.user_tools
+  FOR INSERT
+  WITH CHECK ((auth.uid() = user_id));
+
+CREATE POLICY "Users can update their own tools" ON public.user_tools
+  FOR UPDATE
+  USING ((auth.uid() = user_id));

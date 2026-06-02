@@ -9,13 +9,24 @@ CREATE TABLE public.recommendations (
   updated_at timestamptz DEFAULT now()
 );
 
+GRANT SELECT ON public.recommendations TO anon;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.recommendations TO authenticated;
+GRANT ALL ON public.recommendations TO service_role;
+
 ALTER TABLE public.recommendations ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Anyone can view visible recommendations" ON public.recommendations
-  FOR SELECT USING (is_visible = true OR auth.uid() = recommendee_id);
-CREATE POLICY "Users can give recommendations" ON public.recommendations
-  FOR INSERT WITH CHECK (auth.uid() = recommender_id);
-CREATE POLICY "Users can update their given recommendations" ON public.recommendations
-  FOR UPDATE USING (auth.uid() = recommender_id);
+  FOR SELECT
+  USING (((is_visible = true) OR (auth.uid() = recommendee_id)));
+
 CREATE POLICY "Users can delete their given recommendations" ON public.recommendations
-  FOR DELETE USING (auth.uid() = recommender_id);
+  FOR DELETE
+  USING ((auth.uid() = recommender_id));
+
+CREATE POLICY "Users can give recommendations" ON public.recommendations
+  FOR INSERT
+  WITH CHECK ((auth.uid() = recommender_id));
+
+CREATE POLICY "Users can update their given recommendations" ON public.recommendations
+  FOR UPDATE
+  USING ((auth.uid() = recommender_id));
