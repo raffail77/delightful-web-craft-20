@@ -11,7 +11,7 @@ CREATE OR REPLACE FUNCTION public.update_updated_at_column()
  RETURNS trigger
  LANGUAGE plpgsql
  SET search_path TO 'public'
-AS $function$;
+AS $function$
 BEGIN
   NEW.updated_at = now();
   RETURN NEW;
@@ -27,7 +27,7 @@ CREATE OR REPLACE FUNCTION public.has_role(_user_id uuid, _role app_role)
  LANGUAGE sql
  STABLE SECURITY DEFINER
  SET search_path TO 'public'
-AS $function$;
+AS $function$
   SELECT EXISTS (
     SELECT 1
     FROM public.user_roles
@@ -45,7 +45,7 @@ CREATE OR REPLACE FUNCTION public.handle_new_user()
  LANGUAGE plpgsql
  SECURITY DEFINER
  SET search_path TO 'public'
-AS $function$;
+AS $function$
 BEGIN
   INSERT INTO public.profiles (user_id, email, full_name, time_credits)
   VALUES (
@@ -67,7 +67,7 @@ CREATE OR REPLACE FUNCTION public.generate_profile_slug()
  LANGUAGE plpgsql
  SECURITY DEFINER
  SET search_path TO 'public'
-AS $function$;
+AS $function$
 DECLARE
   base_slug text;
   new_slug text;
@@ -97,7 +97,7 @@ CREATE OR REPLACE FUNCTION public.check_message_rate_limit()
  LANGUAGE plpgsql
  SECURITY DEFINER
  SET search_path TO 'public'
-AS $function$;
+AS $function$
 DECLARE
   recent_count INTEGER;
 BEGIN
@@ -123,7 +123,7 @@ CREATE OR REPLACE FUNCTION public.update_endorsement_count()
  LANGUAGE plpgsql
  SECURITY DEFINER
  SET search_path TO 'public'
-AS $function$;
+AS $function$
 BEGIN
   IF TG_OP = 'INSERT' THEN
     UPDATE user_skills SET endorsement_count = endorsement_count + 1 WHERE id = NEW.skill_id;
@@ -143,7 +143,7 @@ CREATE OR REPLACE FUNCTION public.transfer_credits(p_sender_id uuid, p_receiver_
  LANGUAGE plpgsql
  SECURITY DEFINER
  SET search_path TO 'public'
-AS $function$;
+AS $function$
 DECLARE
   v_sender_balance INTEGER;
   v_transaction_id UUID;
@@ -189,7 +189,7 @@ CREATE OR REPLACE FUNCTION public.accept_contract_with_escrow(p_contract_id uuid
  LANGUAGE plpgsql
  SECURITY DEFINER
  SET search_path TO 'public'
-AS $function$;
+AS $function$
 DECLARE
   v_contract contracts;
   v_client_balance INTEGER;
@@ -273,7 +273,7 @@ CREATE OR REPLACE FUNCTION public.pay_contract_stripe(p_contract_id uuid, p_user
  LANGUAGE plpgsql
  SECURITY DEFINER
  SET search_path TO 'public'
-AS $function$;
+AS $function$
 DECLARE
   v_contract contracts;
 BEGIN
@@ -320,7 +320,7 @@ CREATE OR REPLACE FUNCTION public.cancel_contract_with_escrow(p_contract_id uuid
  LANGUAGE plpgsql
  SECURITY DEFINER
  SET search_path TO 'public'
-AS $function$;
+AS $function$
 DECLARE
   v_contract contracts;
 BEGIN
@@ -369,7 +369,7 @@ CREATE OR REPLACE FUNCTION public.auto_cancel_unpaid_contracts()
  LANGUAGE plpgsql
  SECURITY DEFINER
  SET search_path TO 'public'
-AS $function$;
+AS $function$
 DECLARE
   v_count INTEGER;
 BEGIN
@@ -393,7 +393,7 @@ CREATE OR REPLACE FUNCTION public.complete_contract(p_contract_id uuid, p_user_i
  LANGUAGE plpgsql
  SECURITY DEFINER
  SET search_path TO 'public'
-AS $function$;
+AS $function$
 DECLARE
   v_contract contracts;
   v_is_provider BOOLEAN;
@@ -475,7 +475,7 @@ CREATE OR REPLACE FUNCTION public.increment_blog_view(p_slug text)
  LANGUAGE sql
  SECURITY DEFINER
  SET search_path TO 'public'
-AS $function$;
+AS $function$
   UPDATE public.blog_posts SET view_count = view_count + 1 WHERE slug = p_slug AND status = 'published';
 $function$;
 
@@ -488,7 +488,7 @@ CREATE OR REPLACE FUNCTION public.increment_help_view(p_slug text)
  LANGUAGE sql
  SECURITY DEFINER
  SET search_path TO 'public'
-AS $function$;
+AS $function$
   UPDATE public.help_articles SET view_count = view_count + 1 WHERE slug = p_slug AND status = 'published';
 $function$;
 
