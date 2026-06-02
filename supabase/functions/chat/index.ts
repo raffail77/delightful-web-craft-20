@@ -60,9 +60,9 @@ serve(async (req) => {
       });
     }
 
-    // Validate each message structure
+    // Validate each message structure - reject 'system' role (prompt injection)
     for (const msg of messages) {
-      if (!msg || typeof msg !== "object" || !["user", "assistant", "system"].includes(msg.role) || typeof msg.content !== "string") {
+      if (!msg || typeof msg !== "object" || !["user", "assistant"].includes(msg.role) || typeof msg.content !== "string") {
         return new Response(JSON.stringify({ error: "Invalid message format" }), {
           status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
