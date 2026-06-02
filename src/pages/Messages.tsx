@@ -129,7 +129,7 @@ const Messages = () => {
     // Fetch partner profiles
     const partnerIds = Array.from(conversationMap.keys());
     const { data: profiles } = await supabase
-      .from("profiles")
+      .from("profiles_public")
       .select("user_id, full_name")
       .in("user_id", partnerIds);
 
