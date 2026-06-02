@@ -36,7 +36,7 @@ export const useProfileData = (userId: string | undefined, isOwnProfile: boolean
     if (!userId) return;
 
     const { data, error } = await supabase
-      .from('profiles')
+      .from('profiles_public')
       .select('*')
       .eq('user_id', userId)
       .maybeSingle();
